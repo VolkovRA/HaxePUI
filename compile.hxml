@@ -1,0 +1,7 @@
+-lib pixijs
+--class-path lib 
+--class-path src 
+-main Main
+-js "bin/index.js"
+-dce full
+#-debug
