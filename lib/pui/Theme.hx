@@ -3,9 +3,10 @@ package pui;
 import js.Browser;
 import haxe.DynamicAccess;
 import pixi.core.Application;
+import pixi.core.graphics.Graphics;
 
 /**
- * Тема офромления.
+ * Тема оформления.
  * Каждый элемент интерфейса **привязан** к какой-то теме. Этот класс также обеспечивает
  * базовую функциональность всех компонентов по их обновлению и перерисовке.
  * 
@@ -125,7 +126,7 @@ class Theme
     public var updateCount:Int = 0;
 
     /**
-     * Колбек начала цикла обновления.
+     * Колбек начала цикла обновления: `function(Theme):Void`
      * 
      * Если задан, вызывается перед началом обновления всех компонентов этой темы во время цикла рендера.
      * Может быть полезно, когда необходимо собрать статистику о количестве перерисованных компонентов.
@@ -137,10 +138,10 @@ class Theme
      * @see `Theme.updateCount`
      * @see `Theme.onUpdateEnd`
      */
-    public var onUpdateStart:Theme->Void = null;
+    public var onUpdateStart:Dynamic->Void = null;
 
     /**
-     * Колбек завершения обновления всех компонентов этой темы.
+     * Колбек завершения обновления всех компонентов этой темы: `function(Theme):Void`
      * 
      * Если задан, вызывается после завершения обновления всех компонентов во время цикла рендера.
      * Может быть полезно, когда необходимо собрать статистику о количестве перерисованных компонентов.
@@ -154,7 +155,7 @@ class Theme
      * @see `Theme.updateCount`
      * @see `Theme.onUpdateStart`
      */
-    public var onUpdateEnd:Theme->Void = null;
+    public var onUpdateEnd:Dynamic->Void = null;
 
     /**
      * Список компонентов для обновления в текущем цикле рендера.
@@ -268,6 +269,9 @@ class Theme
             f(component);
             return;
         }
+
+        Browser.console.warn(component.toString() + " - Не найден стиль оформления компонента");
+        unknownStyle(component);
     }
 
     /**
@@ -285,6 +289,27 @@ class Theme
             return;
         
         styles[getKey(componentType, style)] = callback;
+    }
+
+    /**
+     * Неизвестное оформление компонента.
+     * Используется для подкраски компонентов, стиль которых не задан.
+     * @param component Неизвестный компонент.
+     */
+    public function unknownStyle(component:Component):Void {
+        var bg = new Graphics();
+        bg.beginFill(0x7f7f7f, 0.5);
+        bg.drawRect(0, 0, 10, 10);
+        component.skinBg = bg;
+
+        if (Utils.eq(component.componentType, Label.TYPE)) {
+            component.w = 80;
+            component.h = 20;
+        }
+        else {
+            component.w = 100;
+            component.h = 100;
+        }
     }
 
     /**
