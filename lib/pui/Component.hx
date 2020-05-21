@@ -4,6 +4,7 @@ import js.lib.Error;
 import haxe.extern.EitherType;
 import pixi.core.display.Container;
 import pixi.core.display.DisplayObject;
+import pixi.core.graphics.Graphics;
 
 /**
  * Компонент графического интерфейса пользователя.
@@ -28,6 +29,9 @@ class Component extends Container
         this.componentID = Component.nextID++;
         this.theme = Theme.current;
         this.componentType = type;
+
+        Utils.set(this.updateLayers, Component.updateLayersDefault);
+        Utils.set(this.updateSize, Component.updateSizeDefault);
     }
 
 
@@ -420,6 +424,48 @@ class Component extends Container
         return value;
     }
 
+    /**
+     * Режим отладки.
+     * 
+     * Если задан, при обновлении компонента рисуется красный, прозрачный фон сверху,
+     * указываюший размеры `w` и `h`. Такая необходимость возникает довольно часто на
+     * этапе отладки интерфейс. Вынесено в отдельный флаг для быстрого включения.
+     * 
+     * При установке нового значения регистрируются изменения в компоненте:
+     *   - `Component.UPDATE_LAYERS` - Для добавления дебагового фона.
+     *   - `Component.UPDATE_SIZE` - Для позицианирования.
+     * 
+     * По умолчанию: `false`.
+     */
+    public var debug(default, set):Bool = false;
+    function set_debug(value:Bool):Bool {
+        if (Utils.eq(value, debug))
+            return value;
+
+        if (value) {
+            if (Utils.eq(skinDebug, null))
+                skinDebug = new Graphics();
+        }
+        else {
+            Utils.hide(this, skinDebug);
+            skinDebug = null;
+        }
+
+        debug = value;
+        update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
+        return value;
+    }
+
+    /**
+     * Дебаговый скин.
+     * 
+     * Контролируется автоматически через свойство: `Component.debug`.
+     * Вы не должны управлять этим скином через это свойство.
+     * 
+     * По умолчанию: `null`.
+     */
+    private var skinDebug(default, null):Graphics = null;
+
 
 
     ////////////////
@@ -466,12 +512,12 @@ class Component extends Container
      * 
      * Функция может быть переопределена подклассом для реализации собственной логики.
      * В конце обновления не забудьте сбросить флаг изменений: `Component.changes=0`.
-     * Вызывать метод суперкласса строго не обязательно.
      */
     @:allow(pui.Theme)
     private function onComponentUpdate():Void {
         var oldc = changes;
         
+        // Обновление:
         if (Utils.flagsAND(changes, Component.UPDATE_FULL)) {
             theme.apply(this);
             
@@ -485,9 +531,38 @@ class Component extends Container
                 updateSize(this);
         }
 
+        // Дебаговый фон:
+        if (Utils.noeq(skinDebug, null)) {
+            skinDebug.clear();
+            skinDebug.beginFill(0xff0000, 0.2); // bg
+            skinDebug.drawRect(0, 0, w, h);
+            skinDebug.beginFill(0xff0000, 1.0);
+            skinDebug.drawRect(-2, 0, 5, 1); // cross x
+            skinDebug.drawRect(0, -2, 1, 5); // cross y
+            skinDebug.beginFill(0xff0000, 0.5);
+
+            var i = w;
+            while (i-- > 0) {
+                if (i % 2 == 0) {
+                    skinDebug.drawRect(i, 0, 1, 1); // border x top
+                    skinDebug.drawRect(i, h-1, 1, 1); // border x bottom
+                }
+            }
+
+            i = h;
+            while (i-- > 0) {
+                if (i % 2 == 0) {
+                    skinDebug.drawRect(0, i, 1, 1); // border y top
+                    skinDebug.drawRect(w-1, i, 1, 1); // border y bottom
+                }
+            }
+            
+            addChild(skinDebug);
+        }
+
+        // Завершение и события:
         changes = 0;
         isInit = true;
-            
         emit(UIEvent.UPDATE, this, oldc);
     }
 
@@ -517,6 +592,10 @@ class Component extends Container
         if (Utils.noeq(skinBgDisabled, null)) {
             skinBgDisabled.destroy();
             Utils.delete(skinBgDisabled);
+        }
+        if (Utils.noeq(skinDebug, null)) {
+            skinDebug.destroy();
+            Utils.delete(skinDebug);
         }
 
         Utils.delete(changes);
