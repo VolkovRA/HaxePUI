@@ -209,6 +209,30 @@ class Label extends Component
     }
 
     /**
+     * Скин текстового поля в выключенном состоянии. (`enabled=false`)
+     * Текст в таком поле рендерится и **загружается заного** в GPU при каждом изменении!
+     * 
+      * Если не указан, используется: `skinText`.
+     * 
+     * При установке нового значения регистрируются изменения в компоненте:
+     *   - `Component.UPDATE_LAYERS` - Для добавления/удаления текста в дисплей лист.
+     *   - `Component.UPDATE_SIZE` - Для повторного масштабирования содержимого.
+     * 
+     * По умолчанию: `null`.
+     */
+    public var skinTextDisabled(default, set):Text = null;
+    function set_skinTextDisabled(value:Text):Text {
+        if (Utils.eq(value, skinTextDisabled))
+            return value;
+
+        Utils.hide(this, skinTextDisabled);
+
+        skinTextDisabled = value;
+        update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
+        return value;
+    }
+
+    /**
       * Скин растрового, текстового поля.
       * Этот текст рендерится очень быстро из заранее подготовленных глифов.
       * 
@@ -226,6 +250,30 @@ class Label extends Component
         Utils.hide(this, skinBitmapText);
 
         skinBitmapText = value;
+        update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
+        return value;
+    }
+
+    /**
+      * Скин растрового, текстового поля в выключеном состоянии.
+      * Этот текст рендерится очень быстро из заранее подготовленных глифов.
+      * 
+      * Если не указан, используется: `skinBitmapText`.
+      * 
+      * При установке нового значения регистрируются изменения в компоненте:
+      *   - `Component.UPDATE_LAYERS` - Для добавления/удаления растрового текста в дисплей лист.
+      *   - `Component.UPDATE_SIZE` - Для повторного масштабирования содержимого.
+      * 
+      * По умолчанию: `null`.
+      */
+    public var skinBitmapTextDisabled(default, set):BitmapText = null;
+    function set_skinBitmapTextDisabled(value:BitmapText):BitmapText {
+        if (Utils.eq(value, skinBitmapTextDisabled))
+            return value;
+
+        Utils.hide(this, skinBitmapTextDisabled);
+
+        skinBitmapTextDisabled = value;
         update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
         return value;
     }
@@ -273,7 +321,21 @@ class Label extends Component
      * Базовое обновление списка отображения компонента `Label`.
      */
     static public var updateLayersDefault:LayersUpdater<Label> = function(label) {
-        Utils.show(label, label.skinBg);
+        if (label.enabled) {
+            Utils.show(label, label.skinBg);
+            Utils.hide(label, label.skinBgDisabled);
+        }
+        else {
+            if (Utils.eq(label.skinBgDisabled, null)) {
+                Utils.show(label, label.skinBg);
+                //Utils.hide(component, component.skinBgDisabled);
+            }
+            else {
+                Utils.hide(label, label.skinBg);
+                Utils.show(label, label.skinBgDisabled);
+            }
+        }
+
         Utils.show(label, label.skinText);
         Utils.show(label, label.skinBitmapText);
     }
@@ -286,22 +348,40 @@ class Label extends Component
             var sw:Float = 0;
             var sh:Float = 0;
             
-            // Надо получить новые размеры
-            // Простой текст:
-            if (label.skinText != null) {
-                if (label.skinText.text == label.text) {
-                    label.skinText.updateText(true);
-                }
-                else {
-                    label.skinText.text = label.text;
-                    label.skinText.updateText(false);
-                }
-                
-                label.skinText.x = 0;
-                label.skinText.y = 0;
+            // Надо получить новые размеры:
+            if (label.enabled || Utils.eq(label.skinTextDisabled, null)) {
+                if (Utils.noeq(label.skinText, null)) {
+                    if (label.skinText.text == label.text) {
+                        label.skinText.updateText(true);
+                    }
+                    else {
+                        label.skinText.text = label.text;
+                        label.skinText.updateText(false);
+                    }
 
-                sw = label.skinText.width;
-                sh = label.skinText.height;
+                    label.skinText.x = 0;
+                    label.skinText.y = 0;
+
+                    sw = label.skinText.width;
+                    sh = label.skinText.height;
+                }
+            }
+            else {
+                if (Utils.noeq(label.skinText, null)) {
+                    if (label.skinTextDisabled.text == label.text) {
+                        label.skinTextDisabled.updateText(true);
+                    }
+                    else {
+                        label.skinTextDisabled.text = label.text;
+                        label.skinTextDisabled.updateText(false);
+                    }
+
+                    label.skinTextDisabled.x = 0;
+                    label.skinTextDisabled.y = 0;
+
+                    sw = label.skinTextDisabled.width;
+                    sh = label.skinTextDisabled.height;
+                }
             }
 
             // Растровый текст:
@@ -309,6 +389,7 @@ class Label extends Component
             
             // Фон:
             Utils.size(label.skinBg, sw, sh);
+            Utils.size(label.skinBgDisabled, label.w, label.h);
 
             // Задаём новые размеры компоненту: (Без вызова сеттера, для оптимального кода)
             Utils.set(label.w, sw);
@@ -320,26 +401,51 @@ class Label extends Component
                 sw = 0;
 
             // Простой текст:
-            if (label.skinText != null) {
-                if (label.skinText.style.wordWrapWidth == sw && label.skinText.text == label.text) {
-                    label.skinText.updateText(true);
+            if (label.enabled || Utils.eq(label.skinTextDisabled, null)) {
+                if (Utils.noeq(label.skinText, null)) {
+                    if (label.skinText.style.wordWrapWidth == sw && label.skinText.text == label.text) {
+                        label.skinText.updateText(true);
+                    }
+                    else {
+                        label.skinText.text = label.text;
+                        label.skinText.style.wordWrapWidth = sw;
+                        label.skinText.updateText(false);
+                    }
+    
+                    if (Utils.eq(label.align, TextAlign.RIGHT))
+                        label.skinText.x = label.w - label.skinText.width - label.paddingRight;
+                    else if (Utils.eq(label.align, TextAlign.CENTER))
+                        label.skinText.x = (label.w - label.skinText.width) / 2;
+                    else
+                        label.skinText.x = label.paddingLeft;
                 }
-                else {
-                    label.skinText.text = label.text;
-                    label.skinText.style.wordWrapWidth = sw;
-                    label.skinText.updateText(false);
-                }
+            }
+            else {
+                if (Utils.noeq(label.skinTextDisabled, null)) {
+                    if (label.skinTextDisabled.style.wordWrapWidth == sw && label.skinTextDisabled.text == label.text) {
+                        label.skinTextDisabled.updateText(true);
+                    }
+                    else {
+                        label.skinTextDisabled.text = label.text;
+                        label.skinTextDisabled.style.wordWrapWidth = sw;
+                        label.skinTextDisabled.updateText(false);
+                    }
 
-                if (label.align == TextAlign.RIGHT)
-                    label.skinText.x = label.w - label.skinText.width - label.paddingRight;
-                else if (label.align == TextAlign.CENTER)
-                    label.skinText.x = (label.w - label.skinText.width) / 2;
-                else
-                    label.skinText.x = label.paddingLeft;
+                    if (Utils.eq(label.align, TextAlign.RIGHT))
+                        label.skinTextDisabled.x = label.w - label.skinTextDisabled.width - label.paddingRight;
+                    else if (Utils.eq(label.align, TextAlign.CENTER))
+                        label.skinTextDisabled.x = (label.w - label.skinTextDisabled.width) / 2;
+                    else
+                        label.skinTextDisabled.x = label.paddingLeft;
+                }
             }
 
             // Растровый текст:
             // ...
+
+            // Фон:
+            Utils.size(label.skinBg, label.w, label.h);
+            Utils.size(label.skinBgDisabled, label.w, label.h);
         }
     }
 }

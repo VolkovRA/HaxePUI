@@ -318,6 +318,7 @@ class Component extends Container
      * 
      * При установке нового значения регистрируются изменения в компоненте:
      *   - `Component.UPDATE_LAYERS` - Для переключения фона выключенного состояния.
+     *   - `Component.UPDATE_SIZE` - Для обновления позицианирования.
      * 
      * По умолчанию: `true`.
      */
@@ -327,7 +328,7 @@ class Component extends Container
             return value;
 
         enabled = value;
-        update(false, Component.UPDATE_LAYERS);
+        update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
         return value;
     }
 
@@ -429,7 +430,7 @@ class Component extends Container
      * 
      * Если задан, при обновлении компонента рисуется красный, прозрачный фон сверху,
      * указываюший размеры `w` и `h`. Такая необходимость возникает довольно часто на
-     * этапе отладки интерфейс. Вынесено в отдельный флаг для быстрого включения.
+     * этапе вёрстки и отладки интерфейса. Вынесено в отдельный флаг для быстрого включения.
      * 
      * При установке нового значения регистрируются изменения в компоненте:
      *   - `Component.UPDATE_LAYERS` - Для добавления дебагового фона.
@@ -442,15 +443,6 @@ class Component extends Container
         if (Utils.eq(value, debug))
             return value;
 
-        if (value) {
-            if (Utils.eq(skinDebug, null))
-                skinDebug = new Graphics();
-        }
-        else {
-            Utils.hide(this, skinDebug);
-            skinDebug = null;
-        }
-
         debug = value;
         update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
         return value;
@@ -459,7 +451,8 @@ class Component extends Container
     /**
      * Дебаговый скин.
      * 
-     * Контролируется автоматически через свойство: `Component.debug`.
+     * Контролируется автоматически через свойство: `Component.debug` и
+     * внутренний метод: `drawDebugSkin()`.
      * Вы не должны управлять этим скином через это свойство.
      * 
      * По умолчанию: `null`.
@@ -532,38 +525,49 @@ class Component extends Container
         }
 
         // Дебаговый фон:
-        if (Utils.noeq(skinDebug, null)) {
-            skinDebug.clear();
-            skinDebug.beginFill(0xff0000, 0.2); // bg
-            skinDebug.drawRect(0, 0, w, h);
-            skinDebug.beginFill(0xff0000, 1.0);
-            skinDebug.drawRect(-2, 0, 5, 1); // cross x
-            skinDebug.drawRect(0, -2, 1, 5); // cross y
-            skinDebug.beginFill(0xff0000, 0.5);
-
-            var i = w;
-            while (i-- > 0) {
-                if (i % 2 == 0) {
-                    skinDebug.drawRect(i, 0, 1, 1); // border x top
-                    skinDebug.drawRect(i, h-1, 1, 1); // border x bottom
-                }
-            }
-
-            i = h;
-            while (i-- > 0) {
-                if (i % 2 == 0) {
-                    skinDebug.drawRect(0, i, 1, 1); // border y top
-                    skinDebug.drawRect(w-1, i, 1, 1); // border y bottom
-                }
-            }
-            
-            addChild(skinDebug);
-        }
+        if (debug)
+            drawDebugSkin();
 
         // Завершение и события:
         changes = 0;
         isInit = true;
         emit(UIEvent.UPDATE, this, oldc);
+    }
+
+    /**
+     * Отрисовка дебагового фона.
+     * Создаёт (если отсутствует) дебаговый скин: `debugSkin`
+     * и рисует в него граници компонента.
+     */
+    private function drawDebugSkin():Void {
+        if (Utils.eq(skinDebug, null))
+            skinDebug = new Graphics();
+
+        addChild(skinDebug);
+
+        skinDebug.clear();
+        skinDebug.beginFill(0xff0000, 0.2); // bg
+        skinDebug.drawRect(0, 0, w, h);
+        skinDebug.beginFill(0xff0000, 1.0);
+        skinDebug.drawRect(-2, 0, 5, 1); // cross x
+        skinDebug.drawRect(0, -2, 1, 5); // cross y
+        skinDebug.beginFill(0xff0000, 0.5);
+
+        var i = w;
+        while (i-- > 0) {
+            if (i % 2 == 0) {
+                skinDebug.drawRect(i, 0, 1, 1); // border x top
+                skinDebug.drawRect(i, h-1, 1, 1); // border x bottom
+            }
+        }
+
+        i = h;
+        while (i-- > 0) {
+            if (i % 2 == 0) {
+                skinDebug.drawRect(0, i, 1, 1); // border y top
+                skinDebug.drawRect(w-1, i, 1, 1); // border y bottom
+            }
+        }
     }
 
     /**
