@@ -1,9 +1,9 @@
 package pui;
 
 /**
- * Выравнивание текста по горизонтали.
+ * Горизонтальное выравнивание. (Ось X)
  */
-@:enum abstract TextAlign(String) to String
+@:enum abstract AlignX(String) to String
 {
 	/**
 	 * Выравнивание по левому краю.

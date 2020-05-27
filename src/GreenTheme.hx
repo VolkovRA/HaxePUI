@@ -13,8 +13,6 @@ class GreenTheme extends Theme
 {
     public function new(app:Application) {
         super(app);
-
-        addStyle(Label.TYPE, "title", setLabelTitle);
     }
 
 
@@ -37,13 +35,14 @@ class GreenTheme extends Theme
         dropShadowBlur: 0
     });
 
+
+
     ////////////////////
     //   СТИЛИЗАЦИЯ   //
     ////////////////////
 
     private function setLabelTitle(label:Label):Void {
         label.skinText = new Text(label.text);
-        //label.debug = true;
-        //label.skinText.style = tsLabelTitle;
+        label.skinText.style = tsLabelTitle;
     }
 }

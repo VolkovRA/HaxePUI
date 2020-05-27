@@ -4,7 +4,6 @@ import js.Syntax;
 import js.lib.Object;
 import pixi.core.display.Container;
 import pixi.core.display.DisplayObject;
-import pixi.interaction.InteractionEvent;
 
 /**
  * Вспомогательные утилиты.
@@ -181,9 +180,9 @@ class Utils
 
     /**
      * Проверить наличие флагов в битовой маске.
-     *   - Возвращает `true`, если маска содержит все указанные флаги.
-     *   - Возвращает `false`, если маска не содержит хотя бы один из флагов.
-     *   - Возвращает `true`, если флаги не переданы. (`flags=0`)
+     * - Возвращает `true`, если маска содержит все указанные флаги.
+     * - Возвращает `false`, если маска не содержит хотя бы один из флагов.
+     * - Возвращает `true`, если флаги не переданы. (`flags=0`)
      * 
      * Пример:
      * ```
@@ -207,9 +206,9 @@ class Utils
 
     /**
      * Проверить наличие хотя бы одного флага в битовой маске.
-     *   - Возвращает `true`, если маска содержит хотя бы один из переданных флагов.
-     *   - Возвращает `false`, если маска не содержит ни одного флага.
-     *   - Возвращает `false`, если флаги не переданы. (`flags=0`)
+     * - Возвращает `true`, если маска содержит хотя бы один из переданных флагов.
+     * - Возвращает `false`, если маска не содержит ни одного флага.
+     * - Возвращает `false`, если флаги не переданы. (`flags=0`)
      * 
      * Пример:
      * ```
@@ -259,124 +258,4 @@ class Utils
     public static inline function degToRad(deg:Float):Float {
         return deg * 0.017453292519943295; // deg * (Math.PI / 180);
     }
-
-    /**
-     * Подключить событие двойного нажатия.
-     * 
-     * Подключает испускание события `Event.POINTER_DOUBLE_TAP` к указанному, экранному объекту.
-     * Повторный вызов перезаписывает параметры: `time` и `dist`.
-     * 
-     * Для удаления события используйте вызов: `pui.Utils.removeDoubleTap()`.
-     * 
-     * @param object Экранный объект.
-     * @param params Параметры настройки двойного нажатия. (Нельзя изменить после назначения)
-     * @see Удаление события двойного клика: `pui.Utils.removeDoubleTap()`
-     */
-    public static function addDoubleClick(object:DisplayObject, params:DoubleTapParams = null):Void {
-        if (params == null)
-            params = {};
-        if (untyped object.doubleTapHandler != null)
-            removeDoubleClick(object);
-
-        var time = nvl(params.time, 250);
-        var dist2 = Math.pow(nvl(params.dist, 10), 2);
-        var isPrimary = nvl(params.isPrimary, true);
-        var buttons = nvl(params.buttons, MouseButtons.LEFT);
-        var history = {};
-        var handler = function(e:InteractionEvent):Void {
-            trace(buttons, e.data.button, e.data.buttons);
-            if ((isPrimary && !e.data.isPrimary) || !(flagsOR(buttons, e.data.buttons)))
-                return;
-
-            var item = {
-                t: uptime(),
-                x: e.data.global.x,
-                y: e.data.global.y,
-            }
-
-            var pre = untyped history[e.data.identifier];
-            if (pre == null || item.t > pre.t + time) {
-                untyped history[e.data.identifier] = item;
-                return;
-            }
-
-            var dx = pre.x - item.x;
-            var dy = pre.y - item.y;
-            if (Math.abs(dx*dx + dy*dy) > dist2) {
-                untyped history[e.data.identifier] = item;
-                return;
-            }
-
-            untyped history[e.data.identifier] = null;
-            object.emit(UIEvent.DOUBLE_CLICK, e);
-        }
-
-        // Две ссылки хранят этот контекст:
-        object.on(Event.POINTER_DOWN, handler);
-        untyped object.doubleTapHandler = handler;
-    }
-
-    /**
-     * Отключить событие двойного нажатия.
-     * Вызов игнорируется, если объект не содержит реализацию двойного клика.
-     * @param object Экранный объект.
-     * @see Добавление события двойного клика: `pui.Utils.addDoubleClick()`
-     */
-    public static function removeDoubleClick(object:DisplayObject):Void {
-        if (untyped object.doubleTapHandler == null)
-            return;
-
-        // Удаляем ссылки на контекст:
-        object.off(Event.POINTER_TAP, untyped object.doubleTapHandler);
-        delete(untyped object.doubleTapHandler);
-    }
-}
-
-/**
- * Параметры для настройки двойного клика.
- */
-typedef DoubleTapParams =
-{
-    /**
-     * Максимальное время между двумя кликами. (mc)
-     * 
-     * По умолчанию: `250` (Четверть секунды)
-     */
-    @:optional var time:Int;
-
-    /**
-     * Максимальное смещение между двумя точками нажатия для регистрации двойного клика. (px)
-     * 
-     * По умолчанию: `10`
-     */
-    @:optional var dist:Float;
-
-    /**
-     * Использовать только основное устройство ввода.
-     * 
-     * Основное устройство - это мышь, первое касание на сенсорном устройстве или т.п.
-     *   - Если задано `true` - объект будет реагировать только на ввод с основного устройства.
-     *   - Если задано `false` - объект будет реагировать на ввод с любого устройства.
-     * 
-     * По умолчанию: `true`
-     * 
-     * @see PointerEvent.isPrimary: https://developer.mozilla.org/en-US/docs/Web/API/PointerEvent/isPrimary
-     */
-    @:optional var isPrimary:Bool;
-
-    /**
-     * Маска клавиш реагирования.
-     * 
-     * Используется для контроля клавиш, которыми может осуществляться взаимодействие с объектом.
-     * По умолчанию объект реагирует только на нажатие левой кнопкой мыши. Вы можете добавить
-     * реагирование и на правую кнопку следующим образом:
-     * ```
-     * var options:DoubleTapParams = {
-     *     buttons: MouseButtons.LEFT | MouseButtons.RIGHT, // Реагирует на правую и на левую кнопки мыши
-     * }
-     * ```
-     * 
-     * По умолчанию: `MouseButtons.LEFT`
-     */
-    @:optional var buttons:BitMask;
 }

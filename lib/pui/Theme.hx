@@ -1,5 +1,6 @@
 package pui;
 
+import pixi.core.text.Text;
 import js.Browser;
 import haxe.DynamicAccess;
 import pixi.core.Application;
@@ -11,11 +12,11 @@ import pixi.core.graphics.Graphics;
  * базовую функциональность всех компонентов по их обновлению и перерисовке.
  * 
  * Тема используется для:
- *   - Кастомизаций всех элементов интерфейса, выполняя роль фабрики скинов и стилей.
- *   - Хранение всех используемых текстур, стилей, шейдеров и т.п. в одном месте, для
+ * - Кастомизаций всех элементов интерфейса, выполняя роль фабрики скинов и стилей.
+ * - Хранение всех используемых текстур, стилей, шейдеров и т.п. в одном месте, для
  *     их повторного, многократного использования всеми элементами интерфейса.
- *   - Быстрого переключения используемой темы оформления.
- *   - Внутренней реализацией, для обеспечения работы элементов интерфейса. (Автообновление)
+ * - Быстрого переключения используемой темы оформления.
+ * - Внутренней реализацией, для обеспечения работы элементов интерфейса. (Автообновление)
  * 
  * Вы **должны** расширить этот класс своим и добавить все стили для используемых вами
  * элементов интерфейса, с помощью метода: `addStyle()`.
@@ -270,15 +271,15 @@ class Theme
             return;
         }
 
-        Browser.console.warn(component.toString() + " - Не найден стиль оформления компонента");
+        Browser.console.error(component.toString() + " - Не найден стиль оформления компонента");
         unknownStyle(component);
     }
 
     /**
      * Добавить новый стиль компонента в эту тему.
      * Регистрирует указанную функцию декоратора для заданного типа и стиля компонента.
-     *   - Вызов игнорируется, если тип компонента не указан. (`null`)
-     *   - Вы можете передать имя стиля как `null`, тогда обработчик будет использоваться как стиль *по умолчанию*.
+     * - Вызов игнорируется, если тип компонента не указан. (`null`)
+     * - Вы можете передать имя стиля как `null`, тогда обработчик будет использоваться как стиль *по умолчанию*.
      * 
      * @param componentType Тип компонента. Пример: `Label`. 
      * @param style Имя стиля. Пример: `PanelTitle`.
@@ -292,24 +293,51 @@ class Theme
     }
 
     /**
-     * Неизвестное оформление компонента.
+     * Дефолтное оформление компонента.
      * Используется для подкраски компонентов, стиль которых не задан.
-     * @param component Неизвестный компонент.
+     * @param component Компонент.
      */
     public function unknownStyle(component:Component):Void {
+        if (Utils.eq(component.componentType, Label.TYPE))              unknownStyleLabel(untyped component);
+        else if (Utils.eq(component.componentType, Button.TYPE))        unknownStyleButton(untyped component);
+        else {
+            var bg = new Graphics();
+            bg.beginFill(0x7f7f7f, 0.5);
+            bg.drawRect(0, 0, 10, 10);
+            component.skinBg = bg; 
+        }
+    }
+
+    /**
+     * Дефолтное оформление `Label`.
+     * Используется для подкраски компонентов, стиль которых не задан.
+     * @param label Текстовая метка.
+     */
+    public function unknownStyleLabel(label:Label):Void {
         var bg = new Graphics();
         bg.beginFill(0x7f7f7f, 0.5);
         bg.drawRect(0, 0, 10, 10);
-        component.skinBg = bg;
 
-        if (Utils.eq(component.componentType, Label.TYPE)) {
-            component.w = 80;
-            component.h = 20;
-        }
-        else {
-            component.w = 100;
-            component.h = 100;
-        }
+        if (Utils.eq(label.skinBg, null))   label.skinBg = bg;
+        if (Utils.eq(label.skinText, null)) label.skinText = new Text("");
+        if (Utils.eq(label.w, 0))           label.w = 80;
+        if (Utils.eq(label.h, 0))           label.h = 20;
+    }
+
+    /**
+     * Дефолтное оформление `Button`.
+     * Используется для подкраски компонентов, стиль которых не задан.
+     * @param button Кнопка.
+     */
+    public function unknownStyleButton(button:Button):Void {
+        var bg = new Graphics();
+        bg.beginFill(0x7f7f7f, 0.5);
+        bg.drawRect(0, 0, 10, 10);
+
+        if (Utils.eq(button.label, null))   { button.label = new Label(); button.label.style = "button text"; }
+        if (Utils.eq(button.skinBg, null))  button.skinBg = bg;
+        if (Utils.eq(button.w, 0))          button.w = 100;
+        if (Utils.eq(button.h, 0))          button.h = 40;
     }
 
     /**

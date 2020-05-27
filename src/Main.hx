@@ -1,9 +1,9 @@
 package;
 
-import pui.Label;
-import pui.Theme;
-import js.Browser;
+import pui.*;
 import pixi.core.Application;
+import pixi.core.graphics.Graphics;
+import js.Browser;
 
 class Main
 {
@@ -26,13 +26,36 @@ class Main
 
         // Create UI:
         var title:Label = new Label();
-        title.style = "title";
-        title.text = "PUI: PixiJS UI components";
+        title.text = "PUI: PixiJS\nUIcomponents";
+        title.debug = true;
         title.x = 5;
         title.y = 5;
-        title.autosize = true;
-        title.debug = true;
+        title.autosize = false;
+        title.enabled = false;
+        title.w = 500;
+        title.h = 100;
+        //title.padding = { top:-6, left:10, right:50, bottom: -10};
+        title.alignX = AlignX.RIGHT;
+        title.alignY = AlignY.BOTTOM;
         app.stage.addChild(title);
+
+        var ico:Graphics = new Graphics();
+        ico.beginFill(0xffff00, 0.8);
+        ico.drawCircle(5, 5, 5);
+
+        var bt:Button = new Button();
+        bt.text = "Button";
+        
+        //bt.debug = true;
+        bt.x = 5;
+        bt.y = 120;
+        bt.ico = ico;
+        bt.icoGap = 5;
+        bt.paddingHover = {top: -1, left:0, right:0, bottom:1 };
+        bt.paddingPress = {top: 1, left:0, right:0, bottom:0 };
+        //bt.enabled = false;
+        app.stage.addChild(bt);
+        bt.mouseInput = null;
     }
 
     static private function onUpdateUI(theme:GreenTheme):Void {

@@ -14,8 +14,8 @@ import pixi.core.graphics.Graphics;
  * обновления перед началом цикла рендера. (Смотрите свойство: `changes`)
  * 
  * События:
- *   * `UIEvent.UPDATE` - Компонент обновился: `Component->changes->Void`. (Передаёт старые изменения)
- *   * *А также все базовые события pixijs: https://pixijs.download/dev/docs/PIXI.Container.html*
+ * - `UIEvent.UPDATE` - Компонент обновился: `Component->changes->Void`. (Передаёт старые изменения)
+ * - *А также все базовые события pixijs: https://pixijs.download/dev/docs/PIXI.Container.html*
  */
 class Component extends Container
 {
@@ -197,7 +197,7 @@ class Component extends Container
      * циклом рендера или при ручном вызове метода: `Component.update(true)`.
      * 
      * При установке нового значения регистрируются изменения в компоненте:
-     *   - `Component.UPDATE_FULL` - Для полной перерисовки компонента в соответствии с новым стилем.
+     * - `Component.UPDATE_FULL` - Для полной перерисовки компонента в соответствии с новым стилем.
      * 
      * Не может быть `null`.
      */
@@ -221,7 +221,7 @@ class Component extends Container
      * его изменениях. *(см.: `Component.update()`)*
      * 
      * При установке нового значения регистрируются изменения в компоненте:
-     *   - `Component.FULL_UPDATE` - Для полной перерисовки компонента по новой теме.
+     * - `Component.FULL_UPDATE` - Для полной перерисовки компонента по новой теме.
      * 
      * Значение по умолчанию: `Theme.current`.
      */
@@ -245,10 +245,11 @@ class Component extends Container
      * Ширина компонента. (px)
      * 
      * Для указания размеров компонента вы **должны** использовать это значение, а не `width`.
-     *   - Это отдельное, собственное значение, которое указывает на необходимый размер для компонента.
-     *   - Это значение фиксированное, оно не меняется само по себе и не зависит от трансформаций объекта.
-     *   - Это значение прямо не влияет на `width` и наоборот.
-     *   - Это значение не может быть меньше `0`, быть равным `null`, `NaN` или т.п.  
+     * - Это отдельное, собственное значение, которое указывает на необходимый размер для компонента.
+     * - Это значение фиксированное, оно не меняется само по себе и не зависит от трансформаций объекта.
+     * - Это значение прямо не влияет на `width` и наоборот.
+     * - Это значение не может быть меньше `0`, быть равным `null`, `NaN` или т.п.
+     * - Это значение всегда целочисленно.
      * 
      * Базовое свойство `width` не подходит из-за этих причин:
      *   1. Оно тесно связано с матрицей объекта, на него влияет скалирование и прочие трансформаций.
@@ -257,17 +258,18 @@ class Component extends Container
      *   4. Значение ширины компонента должно использоваться как декларативное.
      * 
      * При установке нового значения регистрируются изменения в компоненте:
-     *   - `Component.UPDATE_SIZE` - Для повторного масштабирования из-за изменения размеров.
+     * - `Component.UPDATE_SIZE` - Для повторного масштабирования из-за изменения размеров.
      * 
      * По умолчанию: `0`.
      */
-    public var w(default, set):Float = 0;
-    function set_w(value:Float):Float {
-        if (Utils.eq(value, w))
+    public var w(default, set):Int = 0;
+    function set_w(value:Int):Int {
+        var v = Math.floor(value);
+        if (Utils.eq(v, w))
             return value;
         
-        if (value > 0)
-            w = value;
+        if (v > 0)
+            w = v;
         else
             w = 0;
 
@@ -279,10 +281,11 @@ class Component extends Container
      * Высота компонента. (px)
      * 
      * Для указания размеров компонента вы **должны** использовать это значение, а не `height`.
-     *   - Это отдельное, собственное значение, которое указывает на необходимый размер для компонента.
-     *   - Это значение фиксированное, оно не меняется само по себе и не зависит от трансформаций объекта.
-     *   - Это значение прямо не влияет на `height` и наоборот.
-     *   - Это значение не может быть меньше `0`, быть равным `null`, `NaN` или т.п.  
+     * - Это отдельное, собственное значение, которое указывает на необходимый размер для компонента.
+     * - Это значение фиксированное, оно не меняется само по себе и не зависит от трансформаций объекта.
+     * - Это значение прямо не влияет на `height` и наоборот.
+     * - Это значение не может быть меньше `0`, быть равным `null`, `NaN` или т.п.  
+     * - Это значение всегда целочисленно.
      * 
      * Базовое свойство `height` не подходит из-за этих причин:
      *   1. Оно тесно связано с матрицей объекта, на него влияет скалирование и прочие трансформаций.
@@ -291,17 +294,18 @@ class Component extends Container
      *   4. Значение высоты компонента должно использоваться как декларативное.
      * 
      * При установке нового значения регистрируются изменения в компоненте:
-     *   - `Component.UPDATE_SIZE` - Для повторного масштабирования из-за изменения размеров.
+     * - `Component.UPDATE_SIZE` - Для повторного масштабирования из-за изменения размеров.
      * 
      * По умолчанию: `0`.
      */
-    public var h(default, set):Float = 0;
-    function set_h(value:Float):Float {
-        if (Utils.eq(value, h))
+    public var h(default, set):Int = 0;
+    function set_h(value:Int):Int {
+        var v = Math.floor(value);
+        if (Utils.eq(v, h))
             return value;
         
-        if (value > 0)
-            h = value;
+        if (v > 0)
+            h = v;
         else
             h = 0;
 
@@ -313,12 +317,12 @@ class Component extends Container
      * Активность компонента.
      * 
      * Обратите внимание, что в выключенном состоянии компонент по прежнему будет
-     * отправлять базовые события `Event`. Функциональность событий `UIEvent` зависит
-     * от конкретной реализации типа компонента и может быть отключена.
+     * отправлять базовые события `Event` PixiJS. Функциональность событий `UIEvent`
+     * зависит от конкретной реализации типа компонента и может быть отключена.
      * 
      * При установке нового значения регистрируются изменения в компоненте:
-     *   - `Component.UPDATE_LAYERS` - Для переключения фона выключенного состояния.
-     *   - `Component.UPDATE_SIZE` - Для обновления позицианирования.
+     * - `Component.UPDATE_LAYERS` - Для переключения фона выключенного состояния.
+     * - `Component.UPDATE_SIZE` - Для обновления позицианирования.
      * 
      * По умолчанию: `true`.
      */
@@ -326,7 +330,7 @@ class Component extends Container
     function set_enabled(value:Bool):Bool {
         if (Utils.eq(value, enabled))
             return value;
-
+        
         enabled = value;
         update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
         return value;
@@ -336,8 +340,8 @@ class Component extends Container
      * Скин заднего фона.
      * 
      * При установке нового значения регистрируются изменения в компоненте:
-     *   - `Component.UPDATE_LAYERS` - Для переключения фона.
-     *   - `Component.UPDATE_SIZE` - Для позицианирования фона.
+     * - `Component.UPDATE_LAYERS` - Для переключения фона.
+     * - `Component.UPDATE_SIZE` - Для позицианирования фона.
      * 
      * По умолчанию: `null`.
      */
@@ -357,18 +361,18 @@ class Component extends Container
      * Если значение не задано, используется `skinBg`.
      * 
      * При установке нового значения регистрируются изменения в компоненте:
-     *   - `Component.UPDATE_LAYERS` - Для переключения фона выключенного состояния.
-     *   - `Component.UPDATE_SIZE` - Для позицианирования фона выключенного состояния.
+     * - `Component.UPDATE_LAYERS` - Для переключения фона выключенного состояния.
+     * - `Component.UPDATE_SIZE` - Для позицианирования фона выключенного состояния.
      * 
      * По умолчанию: `null`.
      */
-    public var skinBgDisabled(default, set):Container = null;
-    function set_skinBgDisabled(value:Container):Container {
-        if (Utils.eq(value, skinBgDisabled))
+    public var skinBgDisable(default, set):Container = null;
+    function set_skinBgDisable(value:Container):Container {
+        if (Utils.eq(value, skinBgDisable))
             return value;
 
-        Utils.hide(this, skinBgDisabled);
-        skinBgDisabled = value;
+        Utils.hide(this, skinBgDisable);
+        skinBgDisable = value;
         update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
         return value;
     }
@@ -383,7 +387,7 @@ class Component extends Container
      * *Каждый компонент библиотеки предоставляет несколько готовых функций ресайза на выбор.*
      * 
      * При установке нового значения регистрируются изменения в компоненте:
-     *   - `Component.UPDATE_SIZE` - Для ресайза компонента новым способом.
+     * - `Component.UPDATE_SIZE` - Для ресайза компонента новым способом.
      * 
      * По умолчанию: `Component.updateSizeDefault`.
      */
@@ -409,7 +413,7 @@ class Component extends Container
      * *Каждый компонент библиотеки предоставляет несколько готовых функций управления списком на выбор.*
      * 
      * При установке нового значения регистрируются изменения в компоненте:
-     *   - `Component.UPDATE_LAYERS` - Для отображения слоёв по новому режиму.
+     * - `Component.UPDATE_LAYERS` - Для отображения слоёв по новому режиму.
      * 
      * По умолчанию: `Component.updateLayersDefault`.
      */
@@ -433,8 +437,8 @@ class Component extends Container
      * этапе вёрстки и отладки интерфейса. Вынесено в отдельный флаг для быстрого включения.
      * 
      * При установке нового значения регистрируются изменения в компоненте:
-     *   - `Component.UPDATE_LAYERS` - Для добавления дебагового фона.
-     *   - `Component.UPDATE_SIZE` - Для позицианирования.
+     * - `Component.UPDATE_LAYERS` - Для добавления дебагового фона.
+     * - `Component.UPDATE_SIZE` - Для позицианирования.
      * 
      * По умолчанию: `false`.
      */
@@ -484,6 +488,10 @@ class Component extends Container
     public function update(force:Bool = false, flag:BitMask = 0):Void {
         if (force) {
             changes = changes | flag;
+
+            if (Utils.eq(changes, 0))
+                return;
+
             onComponentUpdate();
         }
         else {
@@ -500,8 +508,8 @@ class Component extends Container
      * Функция фактического обновления компонента.
      * 
      * Точки вызова:
-     *   - Через внешнее API, при вызове метода: `Component.update(true)`.
-     *   - Автоматически, перед началом следующего цикла рендера из темы, которую использует этот компонент.
+     * - Через внешнее API, при вызове метода: `Component.update(true)`.
+     * - Автоматически, перед началом следующего цикла рендера из темы, которую использует этот компонент.
      * 
      * Функция может быть переопределена подклассом для реализации собственной логики.
      * В конце обновления не забудьте сбросить флаг изменений: `Component.changes=0`.
@@ -545,6 +553,7 @@ class Component extends Container
 
         addChild(skinDebug);
 
+        // Крестик и фон:
         skinDebug.clear();
         skinDebug.beginFill(0xff0000, 0.2); // bg
         skinDebug.drawRect(0, 0, w, h);
@@ -553,6 +562,7 @@ class Component extends Container
         skinDebug.drawRect(0, -2, 1, 5); // cross y
         skinDebug.beginFill(0xff0000, 0.5);
 
+        // Обводка:
         var i = w;
         while (i-- > 0) {
             if (i % 2 == 0) {
@@ -568,6 +578,10 @@ class Component extends Container
                 skinDebug.drawRect(w-1, i, 1, 1); // border y bottom
             }
         }
+
+        // Надпись размеров:
+        skinDebug.beginFill(0xff0000, 0.8);
+        PixelsString.draw(skinDebug, w + "x" + h, 3, 3);
     }
 
     /**
@@ -593,9 +607,9 @@ class Component extends Container
             skinBg.destroy();
             Utils.delete(skinBg);
         }
-        if (Utils.noeq(skinBgDisabled, null)) {
-            skinBgDisabled.destroy();
-            Utils.delete(skinBgDisabled);
+        if (Utils.noeq(skinBgDisable, null)) {
+            skinBgDisable.destroy();
+            Utils.delete(skinBgDisable);
         }
         if (Utils.noeq(skinDebug, null)) {
             skinDebug.destroy();
@@ -622,16 +636,16 @@ class Component extends Container
     static public var updateLayersDefault:LayersUpdater<Component> = function(component) {
         if (component.enabled) {
             Utils.show(component, component.skinBg);
-            Utils.hide(component, component.skinBgDisabled);
+            Utils.hide(component, component.skinBgDisable);
         }
         else {
-            if (Utils.eq(component.skinBgDisabled, null)) {
+            if (Utils.eq(component.skinBgDisable, null)) {
                 Utils.show(component, component.skinBg);
-                //Utils.hide(component, component.skinBgDisabled);
+                //Utils.hide(component, component.skinBgDisable);
             }
             else {
                 Utils.hide(component, component.skinBg);
-                Utils.show(component, component.skinBgDisabled);
+                Utils.show(component, component.skinBgDisable);
             }
         }
     }
@@ -641,7 +655,7 @@ class Component extends Container
      */
     static public var updateSizeDefault:SizeUpdater<Component> = function(component) {
         Utils.size(component.skinBg, component.w, component.h);
-        Utils.size(component.skinBgDisabled, component.w, component.h);
+        Utils.size(component.skinBgDisable, component.w, component.h);
     }
 }
 
