@@ -1,10 +1,10 @@
 package pui;
 
-import pixi.core.text.Text;
 import js.Browser;
 import haxe.DynamicAccess;
 import pixi.core.Application;
 import pixi.core.graphics.Graphics;
+import pixi.core.text.Text;
 
 /**
  * Тема оформления.
