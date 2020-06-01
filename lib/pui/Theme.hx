@@ -2,6 +2,7 @@ package pui;
 
 import js.Browser;
 import haxe.DynamicAccess;
+import pui.ScrollBar;
 import pixi.core.Application;
 import pixi.core.graphics.Graphics;
 import pixi.core.text.Text;
@@ -29,6 +30,12 @@ import pixi.core.text.Text;
  */
 class Theme
 {
+    static private inline var COLOR_BLACK:Int = 0x000000;
+    static private inline var COLOR_GRAY_DARK:Int = 0x212121;
+    static private inline var COLOR_GRAY:Int = 0x303030;
+    static private inline var COLOR_GRAY_BRIGHT:Int = 0x424242;
+    static private var errors:DynamicAccess<Bool> = {};
+
     /**
      * Создать новую тему.
      * @param application Экземпляр приложения pixi, который выполняет рендеринг гуи данной темы.
@@ -271,8 +278,15 @@ class Theme
             return;
         }
 
-        Browser.console.error(component.toString() + " - Не найден стиль оформления компонента");
         unknownStyle(component);
+
+        // Ислючаем дубли ошибок в выводе:
+        var str = component.toString() + " - Не найден стиль оформления компонента";
+        if (errors[str])
+            return;
+
+        errors[str] = true;
+        Browser.console.error(str);
     }
 
     /**
@@ -300,9 +314,10 @@ class Theme
     public function unknownStyle(component:Component):Void {
         if (Utils.eq(component.componentType, Label.TYPE))              unknownStyleLabel(untyped component);
         else if (Utils.eq(component.componentType, Button.TYPE))        unknownStyleButton(untyped component);
+        else if (Utils.eq(component.componentType, ScrollBar.TYPE))     unknownStyleScrollBar(untyped component);
         else {
             var bg = new Graphics();
-            bg.beginFill(0x7f7f7f, 0.5);
+            bg.beginFill(COLOR_GRAY_DARK);
             bg.drawRect(0, 0, 10, 10);
             component.skinBg = bg; 
         }
@@ -314,12 +329,7 @@ class Theme
      * @param label Текстовая метка.
      */
     public function unknownStyleLabel(label:Label):Void {
-        var bg = new Graphics();
-        bg.beginFill(0x7f7f7f, 0.5);
-        bg.drawRect(0, 0, 10, 10);
-
-        if (Utils.eq(label.skinBg, null))   label.skinBg = bg;
-        if (Utils.eq(label.skinText, null)) label.skinText = new Text("");
+        if (Utils.eq(label.skinText, null)) { label.skinText = new Text(""); label.skinText.style.fontSize=16; label.skinText.style.fill = "white"; };
         if (Utils.eq(label.w, 0))           label.w = 80;
         if (Utils.eq(label.h, 0))           label.h = 20;
     }
@@ -331,13 +341,67 @@ class Theme
      */
     public function unknownStyleButton(button:Button):Void {
         var bg = new Graphics();
-        bg.beginFill(0x7f7f7f, 0.5);
+        bg.beginFill(COLOR_GRAY);
         bg.drawRect(0, 0, 10, 10);
 
-        if (Utils.eq(button.label, null))   { button.label = new Label(); button.label.style = "button text"; }
-        if (Utils.eq(button.skinBg, null))  button.skinBg = bg;
-        if (Utils.eq(button.w, 0))          button.w = 100;
-        if (Utils.eq(button.h, 0))          button.h = 40;
+        var hover = new Graphics();
+        hover.beginFill(COLOR_GRAY_BRIGHT);
+        hover.drawRect(0, 0, 10, 10);
+
+        var press = new Graphics();
+        press.beginFill(COLOR_GRAY_BRIGHT);
+        press.drawRect(0, 0, 10, 10);
+
+        if (Utils.eq(button.label, null))       button.label = new Label();
+        if (Utils.eq(button.skinBg, null))      button.skinBg = bg;
+        if (Utils.eq(button.skinBgHover, null)) button.skinBgHover = hover;
+        if (Utils.eq(button.skinBgPress, null)) button.skinBgPress = press;
+        if (Utils.eq(button.w, 0))              button.w = 100;
+        if (Utils.eq(button.h, 0))              button.h = 40;
+    }
+
+    /**
+     * Дефолтное оформление `ScrollBar`.
+     * Используется для подкраски компонентов, стиль которых не задан.
+     * @param scroll Полоса прокрутки.
+     */
+    public function unknownStyleScrollBar(scroll:ScrollBar):Void {
+        if (Utils.eq(scroll.skinScroll, null)) {
+            var bg = new Graphics();
+            bg.interactive = true;
+            bg.beginFill(COLOR_GRAY_DARK);
+            bg.drawRect(0, 0, 10, 10);
+            scroll.skinScroll = bg;
+        };
+
+        if (scroll.pointMode) {
+            if (Utils.eq(scroll.thumb, null))       { scroll.thumb = new Button(); scroll.thumb.w = 12; scroll.thumb.h = 12; scroll.thumb.debug = true;};
+            if (Utils.eq(scroll.padding, null))     scroll.padding = { top:6, left:6, right:6, bottom:6 };
+
+            if (Utils.eq(scroll.type, ScrollBarType.HORIZONTAL)) {
+                if (Utils.eq(scroll.w, 0))          scroll.w = 140;
+                if (Utils.eq(scroll.h, 0))          scroll.h = 17;
+            }
+            else {
+                if (Utils.eq(scroll.w, 0))          scroll.w = 17;
+                if (Utils.eq(scroll.h, 0))          scroll.h = 140;
+            }
+        }
+        else {
+            if (Utils.eq(scroll.thumb, null))       { scroll.thumb = new Button(); scroll.thumb.w = 13; scroll.thumb.h = 13; };
+            if (Utils.eq(scroll.decBt, null))       { scroll.decBt = new Button(); scroll.decBt.w = 17; scroll.decBt.h = 17; scroll.decBt.autopress.enabled = true; };
+            if (Utils.eq(scroll.incBt, null))       { scroll.incBt = new Button(); scroll.incBt.w = 17; scroll.incBt.h = 17; scroll.incBt.autopress.enabled = true; };
+            if (Utils.eq(scroll.padding, null))     scroll.padding = { top:2, left:2, right:2, bottom:2 };
+
+            if (Utils.eq(scroll.type, ScrollBarType.HORIZONTAL)) {
+                if (Utils.eq(scroll.w, 0))          scroll.w = 140;
+                if (Utils.eq(scroll.h, 0))          scroll.h = 17;
+            }
+            else {
+                if (Utils.eq(scroll.w, 0))          scroll.w = 17;
+                if (Utils.eq(scroll.h, 0))          scroll.h = 140;
+            }
+        }
     }
 
     /**

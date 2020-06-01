@@ -1,5 +1,6 @@
 package pui;
 
+import js.Browser;
 import pui.Component;
 import pui.Mouse;
 import pixi.core.display.Container;
@@ -14,7 +15,7 @@ import haxe.extern.EitherType;
  * События:
  * - `UIEvent.PRESS`            Нажатие на кнопку. Это событие не диспетчерезируется, если кнопка была выключена: `enabled=false`. (`Button->Void`)
  * - `UIEvent.CLICK`            Клик по кнопке. Не путайте с `Event.CLICK`. Это событие не диспетчерезируется, если кнопка была выключена: `enabled=false`. (`Button->Void`)
- * - `UIEvent.DOUBLE_CLICK`     Двойной клик по кнопке. Это событие не диспетчерезируется, если кнопка была выключена: `enabled=false`. (`Button->Void`)
+ * - `UIEvent.DOUBLE_CLICK`     Двойной клик по кнопке. Необходимо включить в настройках кнопки: `Button.dblClick.enabled = true`.
  * - `UIEvent.STATE`            Состояние кнопки изменено: `Button->ButtonState->Void`. (Передаёт старое состояние)
  * - `UIEvent.UPDATE`           Кнопка обновилась: `Button->changes->Void`. (Передаёт старые изменения)
  * - *А также все базовые события pixijs: https://pixijs.download/dev/docs/PIXI.Container.html*
@@ -27,10 +28,16 @@ class Button extends Component
     static public inline var TYPE:String = "Button";
 
     /**
-     * Отсутствие отступов.
-     * Используется как кешированный объект.
+     * Кешированный `Padding`.
+     * Используется для повторных вычислений внутри компонента.
      */
-    static private var paddingZero:Padding = { top:0, left:0, right:0, bottom:0 };
+    static private var PADDING:Padding = { top:0, left:0, right:0, bottom:0 };
+
+    // Приват
+    private var history:Dynamic = {};
+    private var downCurrentButton:Bool = false;
+    private var autopressTimeout:Int = 0;
+    private var autopressInterval:Int = 0;
 
     /**
      * Создать кнопку.
@@ -49,11 +56,6 @@ class Button extends Component
         on(Event.POINTER_DOWN, onDown);
         on(Event.POINTER_UP, onUp);
         on(Event.POINTER_UP_OUTSIDE, onUpOutside);
-
-
-        on(UIEvent.PRESS, function(bt){ trace("PRESS!"); });
-        on(UIEvent.CLICK, function(bt){ trace("CLICK!"); });
-        on(UIEvent.DOUBLE_CLICK, function(bt){ trace("DOUBLE_CLICK!"); });
     }
 
 
@@ -76,18 +78,40 @@ class Button extends Component
             return;
 
         state = ButtonState.NORMAL;
+
+        // Автонажатие:
+        if (autopressInterval > 0) {
+            Browser.window.clearInterval(autopressInterval);
+            autopressInterval = 0;
+        }
+        if (autopressTimeout > 0) {
+            Browser.window.clearTimeout(autopressTimeout);
+            autopressTimeout = 0;
+        }
     }
     private function onDown(e:InteractionEvent):Void {
+        trace(e.data.isPrimary, e.data.button, e.data.buttons);
         if (!enabled || (isPrimary && !e.data.isPrimary))
             return;
-        if (mouseInput != null && mouseInput.length != 0 && mouseInput.indexOf(e.data.button) == -1)
+        if (Utils.eq(e.data.pointerType, "mouse") && mouseInput != null && mouseInput.length != 0 && mouseInput.indexOf(e.data.button) == -1)
             return;
 
         downCurrentButton = true;
         state = ButtonState.PRESS;
 
+        // Автонажатие:
+        if (autopress.enabled && autopressInterval == 0 && autopressTimeout == 0) {
+            autopressTimeout = Browser.window.setTimeout(function(){
+                if (autopressInterval == 0) {
+                    autopressInterval = Browser.window.setInterval(function(){
+                        emit(UIEvent.PRESS);
+                    }, autopress.interval);
+                }
+            }, autopress.delay);
+        }
+
         // Двойной клик:
-        if (doubleClickParams.enabled) {
+        if (dblClick.enabled) {
             var item = {
                 t: Utils.uptime(),
                 x: e.data.global.x,
@@ -95,7 +119,7 @@ class Button extends Component
             }
 
             var pre = history[e.data.identifier];
-            if (pre == null || item.t > pre.t + doubleClickParams.time) {
+            if (pre == null || item.t > pre.t + dblClick.time) {
                 history[e.data.identifier] = item;
                 emit(UIEvent.PRESS, this);
                 return;
@@ -103,7 +127,7 @@ class Button extends Component
 
             var dx = pre.x - item.x;
             var dy = pre.y - item.y;
-            if (Math.abs(dx*dx + dy*dy) > doubleClickParams.dist * doubleClickParams.dist) {
+            if (Math.abs(dx*dx + dy*dy) > dblClick.dist * dblClick.dist) {
                 history[e.data.identifier] = item;
                 emit(UIEvent.PRESS, this);
                 return;
@@ -120,12 +144,22 @@ class Button extends Component
     }
     private function onUp(e:InteractionEvent):Void {
         if (!enabled || (isPrimary && !e.data.isPrimary))
-            return;
-        if (mouseInput != null && mouseInput.length != 0 && mouseInput.indexOf(e.data.button) == -1)
-            return;
+            return;trace(1);
+        if (Utils.eq(e.data.pointerType, "mouse") && mouseInput != null && mouseInput.length != 0 && mouseInput.indexOf(e.data.button) == -1)
+            return;trace(2);
         
         downCurrentButton = false;
         state = ButtonState.HOVER;
+
+        // Автонажатие:
+        if (autopressInterval > 0) {
+            Browser.window.clearInterval(autopressInterval);
+            autopressInterval = 0;
+        }
+        if (autopressTimeout > 0) {
+            Browser.window.clearTimeout(autopressTimeout);
+            autopressTimeout = 0;
+        }
 
         emit(UIEvent.CLICK, this);
     }
@@ -135,6 +169,16 @@ class Button extends Component
 
         downCurrentButton = false;
         state = ButtonState.NORMAL;
+
+        // Автонажатие:
+        if (autopressInterval > 0) {
+            Browser.window.clearInterval(autopressInterval);
+            autopressInterval = 0;
+        }
+        if (autopressTimeout > 0) {
+            Browser.window.clearTimeout(autopressTimeout);
+            autopressTimeout = 0;
+        }
     }
 
 
@@ -154,12 +198,26 @@ class Button extends Component
 
     /**
      * Параметры срабатывания двойного нажатия.
+     * Позволяет включить/выключить отправку событий двойного клика по кнопке.
+     * 
      * Не может быть `null`.
      */
-    public var doubleClickParams(default, null):DoubleClickParams = {
-        enabled: true,
+    public var dblClick(default, null):DoubleClickParams = {
+        enabled: false,
         time: 250,
         dist: 10,
+    }
+
+    /**
+     * Параметры автонажатия.
+     * Позволяет включить/выключить отправку повторных событий при долгом нажатии на кнопку.
+     * 
+     * Не может быть `null`.
+     */
+    public var autopress(default, null):AutoPressParams = {
+        enabled: false,
+        delay: 250,
+        interval: 20,
     }
 
     /**
@@ -183,18 +241,6 @@ class Button extends Component
      * По умолчанию: `[Mouse.MAIN]` (Только главная кнопка мыши)
      */
     public var mouseInput:Array<MouseKey> = [Mouse.MAIN];
-
-    /**
-     * Флаг активного нажатия.
-     * Используется кнопкой, чтобы определить, нажали изначально по ней или нет.
-     */
-    private var downCurrentButton:Bool = false;
-
-    /**
-     * История кликов.
-     * Используется для реализации события двойного клика.
-     */
-    private var history:Dynamic = {};
 
     /**
      * Текст на кнопке.
@@ -616,6 +662,15 @@ class Button extends Component
             Utils.delete(skinBgPress);
         }
 
+        if (autopressInterval > 0) {
+            Browser.window.clearInterval(autopressInterval);
+            autopressInterval = 0;
+        }
+        if (autopressTimeout > 0) {
+            Browser.window.clearTimeout(autopressTimeout);
+            autopressTimeout = 0;
+        }
+
         super.destroy(options);
     }
 
@@ -937,7 +992,7 @@ class Button extends Component
         // Параметры:
         var ico = bt.ico;
         var label = bt.label;
-        var p = Utils.eq(bt.padding, null)?paddingZero:bt.padding;
+        var p = Utils.eq(bt.padding, null)?PADDING:bt.padding;
 
         // Состояние:
         if (!bt.enabled) { // Выключено
@@ -1007,7 +1062,7 @@ class Button extends Component
         // Параметры:
         var ico = bt.ico;
         var label = bt.label;
-        var p = Utils.eq(bt.padding, null)?paddingZero:bt.padding;
+        var p = Utils.eq(bt.padding, null)?PADDING:bt.padding;
 
         // Состояние:
         if (!bt.enabled) { // Выключено
@@ -1077,7 +1132,7 @@ class Button extends Component
         // Параметры:
         var ico = bt.ico;
         var label = bt.label;
-        var p = Utils.eq(bt.padding, null)?paddingZero:bt.padding;
+        var p = Utils.eq(bt.padding, null)?PADDING:bt.padding;
 
         // Состояние:
         if (!bt.enabled) { // Выключено
@@ -1147,7 +1202,7 @@ class Button extends Component
         // Параметры:
         var ico = bt.ico;
         var label = bt.label;
-        var p = Utils.eq(bt.padding, null)?paddingZero:bt.padding;
+        var p = Utils.eq(bt.padding, null)?PADDING:bt.padding;
 
         // Состояние:
         if (!bt.enabled) { // Выключено
@@ -1217,7 +1272,7 @@ class Button extends Component
         // Параметры:
         var ico = bt.ico;
         var label = bt.label;
-        var p = Utils.eq(bt.padding, null)?paddingZero:bt.padding;
+        var p = Utils.eq(bt.padding, null)?PADDING:bt.padding;
 
         // Состояние:
         if (!bt.enabled) { // Выключено
@@ -1287,7 +1342,7 @@ class Button extends Component
         // Параметры:
         var ico = bt.ico;
         var label = bt.label;
-        var p = Utils.eq(bt.padding, null)?paddingZero:bt.padding;
+        var p = Utils.eq(bt.padding, null)?PADDING:bt.padding;
 
         // Состояние:
         if (!bt.enabled) { // Выключено
@@ -1357,7 +1412,7 @@ class Button extends Component
         // Параметры:
         var ico = bt.ico;
         var label = bt.label;
-        var p = Utils.eq(bt.padding, null)?paddingZero:bt.padding;
+        var p = Utils.eq(bt.padding, null)?PADDING:bt.padding;
 
         // Состояние:
         if (!bt.enabled) { // Выключено
@@ -1427,7 +1482,7 @@ class Button extends Component
         // Параметры:
         var ico = bt.ico;
         var label = bt.label;
-        var p = Utils.eq(bt.padding, null)?paddingZero:bt.padding;
+        var p = Utils.eq(bt.padding, null)?PADDING:bt.padding;
 
         // Состояние:
         if (!bt.enabled) { // Выключено
@@ -1497,7 +1552,7 @@ class Button extends Component
         // Параметры:
         var ico = bt.ico;
         var label = bt.label;
-        var p = Utils.eq(bt.padding, null)?paddingZero:bt.padding;
+        var p = Utils.eq(bt.padding, null)?PADDING:bt.padding;
 
         // Состояние:
         if (!bt.enabled) { // Выключено
@@ -1577,9 +1632,9 @@ typedef DoubleClickParams =
 {
     /**
      * Двойное нажатие включено.
-     * Если `true` - Кнопка будет регистрировать двойные нажатия.
+     * Если `true` - Кнопка будет посылать события двойные нажатия: `UIEvent.DOUBLE_CLICK`.
      * 
-     * По умолчанию: `true`
+     * По умолчанию: `false` (Выключено)
      */
     var enabled:Bool;
 
@@ -1599,4 +1654,32 @@ typedef DoubleClickParams =
      * По умолчанию: `10`
      */
     var dist:Float;
+}
+
+/**
+ * Параметры настройки автоматического нажатия.
+ */
+typedef AutoPressParams =
+{
+    /**
+     * Авто нажатие включено.
+     * Если `true` - Кнопка будет посылать события нажатия при длительном нажатии на кнопку: `UIEvent.PRESS`.
+     * 
+     * По умолчанию: `false` (Выключено)
+     */
+    var enabled:Bool;
+
+    /**
+     * Задержка после первого нажатия и перед запуском отправки событий. (mc)
+     * 
+     * По умолчанию: `250` (Четверть секунды)
+     */
+    var delay:Int;
+
+    /**
+     * Интервал отправки событий. (mc)
+     * 
+     * По умолчанию: `25` (40 Раз в секунду)
+     */
+    var interval:Int;
 }

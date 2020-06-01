@@ -262,8 +262,8 @@ class Component extends Container
      * 
      * По умолчанию: `0`.
      */
-    public var w(default, set):Int = 0;
-    function set_w(value:Int):Int {
+    public var w(default, set):Float = 0;
+    function set_w(value:Float):Float {
         var v = Math.floor(value);
         if (Utils.eq(v, w))
             return value;
@@ -298,8 +298,8 @@ class Component extends Container
      * 
      * По умолчанию: `0`.
      */
-    public var h(default, set):Int = 0;
-    function set_h(value:Int):Int {
+    public var h(default, set):Float = 0;
+    function set_h(value:Float):Float {
         var v = Math.floor(value);
         if (Utils.eq(v, h))
             return value;

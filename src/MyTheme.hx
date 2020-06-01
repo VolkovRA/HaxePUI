@@ -7,9 +7,9 @@ import pixi.core.text.Text;
 import pixi.core.text.TextStyle;
 
 /**
- * Пример создания темы оформления UI.
+ * Пример пользовательской темы оформления.
  */
-class GreenTheme extends Theme
+class MyTheme extends Theme
 {
     public function new(app:Application) {
         super(app);
