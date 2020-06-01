@@ -1,0 +1,11 @@
+{
+	"name": "pui",
+	"url": "https://github.com/VolkovRA/HaxePUI/blob/master/README.md",
+	"license": "MIT",
+	"tags": ["pui", "ui", "gui", "pixi", "pixijs", "js", "html5", "web"],
+	"description": "The UI components library for PixiJS",
+	"version": "1.0.0",
+	"releasenote": "Release",
+	"contributors": ["VolkovRA"],
+	"classPath": "lib"
+}
