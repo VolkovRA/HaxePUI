@@ -69,7 +69,7 @@ class Main
         sch.min = -20;
         sch.max = 80;
         sch.step = 2;
-        sch.type = Orientation.HORIZONTAL;
+        sch.orientation = Orientation.HORIZONTAL;
         sch.pointMode = true;
         sch.on(UIEvent.CHANGE, function(sch, value){ trace(sch.value); });
         //sch.debug = true;
@@ -81,10 +81,12 @@ class Main
         sch2.min = -20;
         sch2.max = 80;
         sch2.step = 2;
-        sch2.type = Orientation.VERTICAL;
+        sch2.orientation = Orientation.VERTICAL;
         sch2.on(UIEvent.CHANGE, function(sch, value){ trace(sch2.value); });
         //sch2.debug = true;
         app.stage.addChild(sch2);
+
+        //var list = new List();
     }
 
     static private function onUpdateUI(theme:MyTheme):Void {

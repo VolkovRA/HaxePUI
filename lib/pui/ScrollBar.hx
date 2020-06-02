@@ -86,7 +86,7 @@ class ScrollBar extends Component
             p = padding;
 
         // Перетаскивание:
-        if (Utils.eq(type, Orientation.HORIZONTAL)) { // Горизонтальный
+        if (Utils.eq(orientation, Orientation.HORIZONTAL)) { // Горизонтальный
             var dx:Float = POINT.x - dragX;
             var fx:Float = p.left;
             var fw:Float = w - p.left - p.right;
@@ -210,7 +210,7 @@ class ScrollBar extends Component
         POINT.y = e.data.global.y;
         toLocal(POINT, null, POINT);
 
-        if (Utils.eq(type, Orientation.HORIZONTAL)) {
+        if (Utils.eq(orientation, Orientation.HORIZONTAL)) {
             var fx:Float = 0;
             var fw:Float = w;
             if (Utils.noeq(padding, null)) {
@@ -378,12 +378,12 @@ class ScrollBar extends Component
      * 
      * По умолчанию: `Orientation.HORIZONTAL`
      */
-    public var type(default, set):Orientation = Orientation.HORIZONTAL;
-    function set_type(value:Orientation):Orientation {
-        if (Utils.eq(value, type))
+    public var orientation(default, set):Orientation = Orientation.HORIZONTAL;
+    function set_orientation(value:Orientation):Orientation {
+        if (Utils.eq(value, orientation))
             return value;
 
-        type = value;
+        orientation = value;
         update(false, Component.UPDATE_SIZE);
         return value;
     }
@@ -729,7 +729,7 @@ class ScrollBar extends Component
             p = sc.padding;
 
         // Позицианирование:
-        if (Utils.eq(sc.type, Orientation.HORIZONTAL)) { // Горизонтальный
+        if (Utils.eq(sc.orientation, Orientation.HORIZONTAL)) { // Горизонтальный
             var fx:Float = 0;
             var fw:Float = sc.w;
 
