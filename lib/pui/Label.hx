@@ -131,24 +131,6 @@ class Label extends Component
     }
 
     /**
-     * Отступ текста от краёв. (px)
-     * 
-     * При установке нового значения регистрируются изменения в компоненте:
-     * - `Component.UPDATE_SIZE` - Для повторного масштабирования текстовой метки.
-     * 
-     * По умолчанию: `null`.
-     */
-    public var padding(default, set):Padding = null;
-    function set_padding(value:Padding):Padding {
-        if (Utils.eq(value, padding))
-            return value;
-
-        padding = value;
-        update(false, Component.UPDATE_SIZE);
-        return value;
-    }
-
-    /**
      * Отступ текста от краёв в выключенном состоянии. (px)
      * Если не задано, используется `padding`.
      * 
@@ -157,8 +139,8 @@ class Label extends Component
      * 
      * По умолчанию: `null`.
      */
-    public var paddingDisable(default, set):Padding = null;
-    function set_paddingDisable(value:Padding):Padding {
+    public var paddingDisable(default, set):Offset = null;
+    function set_paddingDisable(value:Offset):Offset {
         if (Utils.eq(value, paddingDisable))
             return value;
 

@@ -33,7 +33,7 @@ class ScrollBar extends Component
      * Кешированный `Padding`.
      * Используется для повторных вычислений внутри компонента.
      */
-    static private var PADDING:Padding = { top:0, left:0, right:0, bottom:0 };
+    static private var PADDING:Offset = { top:0, left:0, right:0, bottom:0 };
 
     // Приват
     private var isDragging:Bool = false;
@@ -369,7 +369,7 @@ class ScrollBar extends Component
     public var step:Float = 0.02;
 
     /**
-     * Тип полосы прокрутки.
+     * Ориентация полосы прокрутки.
      * 
      * Позволяет задать горизонтыльную или вертикальную ориентацию.
      * 
@@ -594,24 +594,6 @@ class ScrollBar extends Component
         Utils.hide(this, skinScrollDisable);
         skinScrollDisable = value;
         update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
-        return value;
-    }
-
-    /**
-     * Отступы внутри скроллбара.
-     * 
-     * При установке нового значения регистрируются изменения в компоненте:
-     * - `Component.UPDATE_SIZE` - Для повторного позицианирования.
-     * 
-     * По умолчанию: `null`.
-     */
-    public var padding(default, set):Padding = null;
-    function set_padding(value:Padding):Padding {
-        if (Utils.eq(value, padding))
-            return value;
-
-        padding = value;
-        update(false, Component.UPDATE_SIZE);
         return value;
     }
 

@@ -28,10 +28,10 @@ class Button extends Component
     static public inline var TYPE:String = "Button";
 
     /**
-     * Кешированный `Padding`.
+     * Кешированный отступ.
      * Используется для повторных вычислений внутри компонента.
      */
-    static private var PADDING:Padding = { top:0, left:0, right:0, bottom:0 };
+    static private var PADDING:Offset = { top:0, left:0, right:0, bottom:0 };
 
     // Приват
     private var history:Dynamic = {};
@@ -495,24 +495,6 @@ class Button extends Component
     }
 
     /**
-     * Отступы содержимого.
-     * 
-     * При установке нового значения регистрируются изменения в компоненте:
-     * - `Component.UPDATE_SIZE` - Для повторного позицианирования.
-     * 
-     * По умолчанию: `null`.
-     */
-    public var padding(default, set):Padding = null;
-    function set_padding(value:Padding):Padding {
-        if (Utils.eq(value, padding))
-            return value;
-
-        padding = value;
-        update(false, Component.UPDATE_SIZE);
-        return value;
-    }
-
-    /**
      * Отступы содержимого при наведении курсора.
      * Если не задано, используется `padding`.
      * 
@@ -521,8 +503,8 @@ class Button extends Component
      * 
      * По умолчанию: `null`.
      */
-    public var paddingHover(default, set):Padding = null;
-    function set_paddingHover(value:Padding):Padding {
+    public var paddingHover(default, set):Offset = null;
+    function set_paddingHover(value:Offset):Offset {
         if (Utils.eq(value, paddingHover))
             return value;
 
@@ -540,8 +522,8 @@ class Button extends Component
      * 
      * По умолчанию: `null`.
      */
-    public var paddingPress(default, set):Padding = null;
-    function set_paddingPress(value:Padding):Padding {
+    public var paddingPress(default, set):Offset = null;
+    function set_paddingPress(value:Offset):Offset {
         if (Utils.eq(value, paddingPress))
             return value;
 
@@ -559,8 +541,8 @@ class Button extends Component
      * 
      * По умолчанию: `null`.
      */
-    public var paddingDisable(default, set):Padding = null;
-    function set_paddingDisable(value:Padding):Padding {
+    public var paddingDisable(default, set):Offset = null;
+    function set_paddingDisable(value:Offset):Offset {
         if (Utils.eq(value, paddingDisable))
             return value;
 

@@ -337,6 +337,48 @@ class Component extends Container
     }
 
     /**
+     * Внутренние отступы.
+     * 
+     * Это свойство похоже на аналогичное в css, с помощью которого вы можете
+     * задать отступы для внутреннего содержимого элемента от его краёв. Не
+     * все компоненты обязательно реализуют это поведение. Для того, что бы
+     * изменения вступили в силу, вы можете переназначить объект в это свойство
+     * или вызвать метод `update()` вручную.
+     * 
+     * При установке нового значения регистрируются изменения в компоненте:
+     * - `Component.UPDATE_SIZE` - Для повторного позицианирования.
+     * 
+     * По умолчанию: `null`. (Отступы не заданы)
+     */
+    public var padding(default, set):Offset = null;
+    function set_padding(value:Offset):Offset {
+        padding = value;
+        update(false, Component.UPDATE_SIZE);
+        return value;
+    }
+
+    /**
+     * Внешние отступы.
+     * 
+     * Это свойство похоже на аналогичное в css, с помощью которого вы можете
+     * задать отступы этого компонента от других элементов. Не все компоненты
+     * обязательно реализуют это поведение. Для того, что бы изменения вступили
+     * в силу, вы можете переназначить объект в это свойство или вызвать метод
+     * `update()` вручную.
+     * 
+     * При установке нового значения регистрируются изменения в компоненте:
+     * - `Component.UPDATE_SIZE` - Для повторного позицианирования.
+     * 
+     * По умолчанию: `null`. (Отступы не заданы)
+     */
+    public var margin(default, set):Offset = null;
+    function set_margin(value:Offset):Offset {
+        margin = value;
+        update(false, Component.UPDATE_SIZE);
+        return value;
+    }
+
+    /**
      * Скин заднего фона.
      * 
      * При установке нового значения регистрируются изменения в компоненте:
@@ -552,36 +594,36 @@ class Component extends Container
             skinDebug = new Graphics();
 
         addChild(skinDebug);
+        skinDebug.clear();
+
+        // Внешний отступ:
+        if (margin != null) {
+            skinDebug.beginFill(0xff7700, 0.2);
+            skinDebug.drawRect(0, 0 - margin.top, w, margin.top);
+            skinDebug.drawRect(0, h, w, margin.bottom);
+            skinDebug.drawRect(-margin.left, 0, margin.left, h);
+            skinDebug.drawRect(w, 0, margin.right, h);
+        }
+
+        // Внутренний отступ:
+        if (padding != null) {
+            skinDebug.beginFill(0x00ff00, 0.2); // bg
+            skinDebug.drawRect(0, 0, w, padding.top);
+            skinDebug.drawRect(0, h, w, -padding.bottom);
+            skinDebug.drawRect(0, 0, padding.left, h);
+            skinDebug.drawRect(w, 0, -padding.right, h);
+        }
 
         // Крестик и фон:
-        skinDebug.clear();
         skinDebug.beginFill(0xff0000, 0.2); // bg
         skinDebug.drawRect(0, 0, w, h);
         skinDebug.beginFill(0xff0000, 1.0);
         skinDebug.drawRect(-2, 0, 5, 1); // cross x
         skinDebug.drawRect(0, -2, 1, 5); // cross y
         skinDebug.beginFill(0xff0000, 0.5);
-
-        // Обводка:
-        var i = w;
-        while (i-- > 0) {
-            if (i % 2 == 0) {
-                skinDebug.drawRect(i, 0, 1, 1); // border x top
-                skinDebug.drawRect(i, h-1, 1, 1); // border x bottom
-            }
-        }
-
-        i = h;
-        while (i-- > 0) {
-            if (i % 2 == 0) {
-                skinDebug.drawRect(0, i, 1, 1); // border y top
-                skinDebug.drawRect(w-1, i, 1, 1); // border y bottom
-            }
-        }
-
-        // Надпись размеров:
+        Utils.dwarBorder(skinDebug, 0, 0, w, h);
         skinDebug.beginFill(0xff0000, 0.8);
-        PixelsString.draw(skinDebug, w + "x" + h, 3, 3);
+        Utils.drawText(skinDebug, w + "x" + h, 3, 3);
     }
 
     /**
