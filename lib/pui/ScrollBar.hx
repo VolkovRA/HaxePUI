@@ -86,7 +86,7 @@ class ScrollBar extends Component
             p = padding;
 
         // Перетаскивание:
-        if (Utils.eq(type, ScrollBarType.HORIZONTAL)) { // Горизонтальный
+        if (Utils.eq(type, Orientation.HORIZONTAL)) { // Горизонтальный
             var dx:Float = POINT.x - dragX;
             var fx:Float = p.left;
             var fw:Float = w - p.left - p.right;
@@ -210,7 +210,7 @@ class ScrollBar extends Component
         POINT.y = e.data.global.y;
         toLocal(POINT, null, POINT);
 
-        if (Utils.eq(type, ScrollBarType.HORIZONTAL)) {
+        if (Utils.eq(type, Orientation.HORIZONTAL)) {
             var fx:Float = 0;
             var fw:Float = w;
             if (Utils.noeq(padding, null)) {
@@ -376,10 +376,10 @@ class ScrollBar extends Component
      * При установке нового значения регистрируются изменения в компоненте:
      * - `Component.UPDATE_SIZE` - Для повторного масштабирования.
      * 
-     * По умолчанию: `ScrollBarType.HORIZONTAL`
+     * По умолчанию: `Orientation.HORIZONTAL`
      */
-    public var type(default, set):ScrollBarType = ScrollBarType.HORIZONTAL;
-    function set_type(value:ScrollBarType):ScrollBarType {
+    public var type(default, set):Orientation = Orientation.HORIZONTAL;
+    function set_type(value:Orientation):Orientation {
         if (Utils.eq(value, type))
             return value;
 
@@ -729,7 +729,7 @@ class ScrollBar extends Component
             p = sc.padding;
 
         // Позицианирование:
-        if (Utils.eq(sc.type, ScrollBarType.HORIZONTAL)) { // Горизонтальный
+        if (Utils.eq(sc.type, Orientation.HORIZONTAL)) { // Горизонтальный
             var fx:Float = 0;
             var fw:Float = sc.w;
 
@@ -876,21 +876,4 @@ class ScrollBar extends Component
             }
         }
     }
-}
-
-/**
- * Тип полосы прокрутки.
- */
-@:enum abstract ScrollBarType(Int) to Int
-{
-    /**
-     * Горизонтальный скроллер.
-     * (Используется по умолчанию)
-     */
-    var HORIZONTAL = 0;
-
-    /**
-     * Вертикальный скроллер.
-     */
-    var VERTICAL = 1;
 }

@@ -378,7 +378,7 @@ class Theme
             if (Utils.eq(scroll.thumb, null))       { scroll.thumb = new Button(); scroll.thumb.w = 12; scroll.thumb.h = 12; scroll.thumb.debug = true;};
             if (Utils.eq(scroll.padding, null))     scroll.padding = { top:6, left:6, right:6, bottom:6 };
 
-            if (Utils.eq(scroll.type, ScrollBarType.HORIZONTAL)) {
+            if (Utils.eq(scroll.type, Orientation.HORIZONTAL)) {
                 if (Utils.eq(scroll.w, 0))          scroll.w = 140;
                 if (Utils.eq(scroll.h, 0))          scroll.h = 17;
             }
@@ -393,7 +393,7 @@ class Theme
             if (Utils.eq(scroll.incBt, null))       { scroll.incBt = new Button(); scroll.incBt.w = 17; scroll.incBt.h = 17; scroll.incBt.autopress.enabled = true; };
             if (Utils.eq(scroll.padding, null))     scroll.padding = { top:2, left:2, right:2, bottom:2 };
 
-            if (Utils.eq(scroll.type, ScrollBarType.HORIZONTAL)) {
+            if (Utils.eq(scroll.type, Orientation.HORIZONTAL)) {
                 if (Utils.eq(scroll.w, 0))          scroll.w = 140;
                 if (Utils.eq(scroll.h, 0))          scroll.h = 17;
             }

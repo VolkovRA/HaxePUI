@@ -1,6 +1,5 @@
 package;
 
-import pui.ScrollBar.ScrollBarType;
 import pui.*;
 import pixi.core.Application;
 import pixi.core.graphics.Graphics;
@@ -33,7 +32,7 @@ class Main
 
         // Create UI:
         var title:Label = new Label();
-        title.text = "PUI: PixiJS UIcomponents";
+        title.text = "PUI: PixiJS UI components";
         title.debug = true;
         title.x = 5;
         title.y = 5;
@@ -70,7 +69,7 @@ class Main
         sch.min = -20;
         sch.max = 80;
         sch.step = 2;
-        sch.type = ScrollBarType.HORIZONTAL;
+        sch.type = Orientation.HORIZONTAL;
         sch.pointMode = true;
         sch.on(UIEvent.CHANGE, function(sch, value){ trace(sch.value); });
         //sch.debug = true;
@@ -78,11 +77,11 @@ class Main
 
         var sch2 = new ScrollBar();
         sch2.x = 5;
-        sch2.y = 210;
+        sch2.y = 200;
         sch2.min = -20;
         sch2.max = 80;
         sch2.step = 2;
-        sch2.type = ScrollBarType.VERTICAL;
+        sch2.type = Orientation.VERTICAL;
         sch2.on(UIEvent.CHANGE, function(sch, value){ trace(sch2.value); });
         //sch2.debug = true;
         app.stage.addChild(sch2);
