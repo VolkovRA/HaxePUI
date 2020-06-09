@@ -1,8 +1,11 @@
 package pui.ui;
 
 import pui.dom.PointerType;
+import pui.events.Event;
+import pui.events.DragEvent;
 import pui.geom.Vec2;
 import pui.ui.Component;
+import pui.pixi.PixiEvent;
 import pixi.core.display.Container;
 import pixi.core.display.DisplayObject;
 import pixi.core.graphics.Graphics;
@@ -23,17 +26,11 @@ import haxe.extern.EitherType;
  * скроллера в случае изменения его содержимого.
  * 
  * События:
- * - `UIEvent.OVERDRAG_X`       Избыточное натяжение по оси X. Это событие посылается при
- *                              избыточном натяжении списка, передаёт силу натяжения, от `-1` до `1`).
- *                              Может быть полезно для добавления пользовательских эффектов.
- *                              См.: `dragParams` (`Scroller->Float->Void`)
- * 
- * - `UIEvent.OVERDRAG_Y`       Избыточное натяжение по оси Y. Это событие посылается при
- *                              избыточном натяжении списка, передаёт силу натяжения, от `-1` до `1`).
- *                              Может быть полезно для добавления пользовательских эффектов.
- *                              См.: `dragParams` (`Scroller->Float->Void`)
- * 
- * - `UIEvent.UPDATE`           Скроллер обновился: `Scroller->changes->Void`. (Передаёт старые изменения)
+ * - `DragEvent.START`          Начало перетаскивания контента пользователем.
+ * - `DragEvent.STOP`           Завершение перетаскивания контента пользователем.
+ * - `DragEvent.MOVE`           Перетаскивание контента пользователем.
+ * - `DragEvent.OVERDRAG`       Перетаскивание контента пользователем за пределы доступной зоны.
+ * - `ComponentEvent.UPDATE`    Обновление компонента. (Перерисовка)
  * - *А также все базовые события pixijs: https://pixijs.download/dev/docs/PIXI.Container.html*
  */
 class Scroller extends Component
@@ -73,23 +70,23 @@ class Scroller extends Component
 
         content = new Container();
         content.interactive = true;
-        content.on(Event.POINTER_DOWN, onContentDown);
-        content.on(Event.POINTER_UP, onContentUp);
-        content.on(Event.POINTER_UP_OUTSIDE, onContentUp);
+        content.on(PixiEvent.POINTER_DOWN, onContentDown);
+        content.on(PixiEvent.POINTER_UP, onContentUp);
+        content.on(PixiEvent.POINTER_UP_OUTSIDE, onContentUp);
         content.mask = contentMask;
 
         scrollV = new ScrollBar();
         scrollV.min = 0;
         scrollV.max = 1;
         scrollV.orientation = Orientation.VERTICAL;
-        scrollV.on(UIEvent.CHANGE, onScrollbarChangeV);
+        scrollV.on(Event.CHANGE, onScrollbarChangeV);
         scrollV.update(true);
 
         scrollH = new ScrollBar();
         scrollH.min = 0;
         scrollH.max = 1;
         scrollH.orientation = Orientation.HORIZONTAL;
-        scrollH.on(UIEvent.CHANGE, onScrollbarChangeH);
+        scrollH.on(Event.CHANGE, onScrollbarChangeH);
         scrollH.update(true);
 
         Utils.set(this.updateLayers, Scroller.defaultLayers);
@@ -102,7 +99,7 @@ class Scroller extends Component
     //   ЛИСТЕНЕРЫ   //
     ///////////////////
 
-    private function onScrollbarChangeV():Void {
+    private function onScrollbarChangeV(e:Event):Void {
         if (scrollIgnore)
             return;
 
@@ -110,7 +107,7 @@ class Scroller extends Component
         update(false, Component.UPDATE_SIZE);
     }
 
-    private function onScrollbarChangeH():Void {
+    private function onScrollbarChangeH(e:Event):Void {
         if (scrollIgnore)
             return;
 
@@ -124,53 +121,65 @@ class Scroller extends Component
         if (Utils.eq(e.data.pointerType, PointerType.MOUSE) && inputMouse != null && inputMouse.length != 0 && inputMouse.indexOf(e.data.button) == -1)
             return;
         
-        content.on(Event.POINTER_MOVE, onContentMove);
+        // Перетаскивание контента:
+        if (dragParams.enabled) {
+            content.on(PixiEvent.POINTER_MOVE, onContentMove);
 
-        isDragging = true;
+            isDragging = true;
+    
+            // Save
+            POINT.x = e.data.global.x;
+            POINT.y = e.data.global.y;
+            content.toLocal(POINT, null, POINT);
+            dragX = POINT.x;
+            dragY = POINT.y;
+    
+            // Drag
+            POINT.x = e.data.global.x;
+            POINT.y = e.data.global.y;
+            toLocal(POINT, null, POINT);
+    
+            dragContentX = POINT.x - dragX;
+            dragContentY = POINT.y - dragY;
+    
+            // Инерция:
+            if (dragParams.enabled && dragParams.inertia.enabled) {
+                inputs = new Array();
+                inputs[0] = { x:POINT.x, y:POINT.y, t:Utils.uptime() / 1000};
+            }
+            
+            update(false, Component.UPDATE_SIZE);
 
-        // Save
-        POINT.x = e.data.global.x;
-        POINT.y = e.data.global.y;
-        content.toLocal(POINT, null, POINT);
-        dragX = POINT.x;
-        dragY = POINT.y;
-
-        // Drag
-        POINT.x = e.data.global.x;
-        POINT.y = e.data.global.y;
-        toLocal(POINT, null, POINT);
-
-        dragContentX = POINT.x - dragX;
-        dragContentY = POINT.y - dragY;
-
-        // Инерция:
-        if (dragParams.enabled && dragParams.inertia.enabled) {
-            inputs = new Array();
-            inputs[0] = { x:POINT.x, y:POINT.y, t:Utils.uptime() / 1000};
+            // Событие:
+            var e = DragEvent.get(DragEvent.START, this);
+            emit(DragEvent.START, e);
+            DragEvent.store(e);
         }
-
-        update(false, Component.UPDATE_SIZE);
     }
 
     private function onContentMove(e:InteractionEvent):Void {
         if (!dragParams.enabled || !enabled || (inputPrimary && !e.data.isPrimary))
             return;
 
-        POINT.x = e.data.global.x;
-        POINT.y = e.data.global.y;
-        toLocal(POINT, null, POINT);
+        // Перетаскивание контента:
+        if (dragParams.enabled) {
+            POINT.x = e.data.global.x;
+            POINT.y = e.data.global.y;
+            toLocal(POINT, null, POINT);
 
-        dragContentX = POINT.x - dragX;
-        dragContentY = POINT.y - dragY;
+            dragContentX = POINT.x - dragX;
+            dragContentY = POINT.y - dragY;
 
-        if (dragParams.enabled && dragParams.inertia.enabled) {
-            if (inputs.length > 1000) // <-- Чтоб моя совесть была спокойна за утечку памяти
-                inputs = new Array();
+            // Инерция:
+            if (dragParams.inertia.enabled) {
+                if (inputs.length > 1000) // <-- Чтоб моя совесть была спокойна за утечку памяти
+                    inputs = new Array();
 
-            inputs.push({ x:POINT.x, y:POINT.y, t:Utils.uptime() / 1000});
+                inputs.push({ x:POINT.x, y:POINT.y, t:Utils.uptime() / 1000});
+            }
+
+            update(false, Component.UPDATE_SIZE);
         }
-
-        update(false, Component.UPDATE_SIZE);
     }
 
     private function onContentUp(e:InteractionEvent):Void {
@@ -179,47 +188,55 @@ class Scroller extends Component
         if (Utils.eq(e.data.pointerType, PointerType.MOUSE) && inputMouse != null && inputMouse.length != 0 && inputMouse.indexOf(e.data.button) == -1)
             return;
 
-        content.off(Event.POINTER_MOVE, onContentMove);
+        content.off(PixiEvent.POINTER_MOVE, onContentMove);
         isDragging = false;
 
-        POINT.x = e.data.global.x;
-        POINT.y = e.data.global.y;
-        toLocal(POINT, null, POINT);
+        // Перетаскивание контента:
+        if (dragParams.enabled) {
+            POINT.x = e.data.global.x;
+            POINT.y = e.data.global.y;
+            toLocal(POINT, null, POINT);
 
-        // Инерция:
-        if (dragParams.enabled && dragParams.inertia.enabled) {
-            inputs.push({ x:POINT.x, y:POINT.y, t:Utils.uptime() / 1000});
+            // Инерция:
+            if (dragParams.inertia.enabled) {
+                inputs.push({ x:POINT.x, y:POINT.y, t:Utils.uptime() / 1000});
 
-            var t = Utils.uptime() / 1000 - dragParams.inertia.time;
-            var vel:Vec2 = new Vec2();
-            var st:InputData = null;
-            var len = inputs.length;
-            var i = len;
+                var t = Utils.uptime() / 1000 - dragParams.inertia.time;
+                var vel:Vec2 = new Vec2();
+                var st:InputData = null;
+                var len = inputs.length;
+                var i = len;
 
-            // Ищем начальную точку ввода:
-            while (i-- != 0) {
-                if (inputs[i].t < t)
-                    break;
-                else
-                    st = inputs[i];
-            }
-
-            // Расчитываем вектор скорости:
-            if (st != null) {
-                i += 2;
-                while (i < len) {
-                    vel.x += inputs[i].x - st.x;
-                    vel.y += inputs[i].y - st.y;
-                    i ++;
+                // Ищем начальную точку ввода:
+                while (i-- != 0) {
+                    if (inputs[i].t < t)
+                        break;
+                    else
+                        st = inputs[i];
                 }
 
-                // Передаём скорость контенту:
-                if (vel.len() > dragParams.inertia.dist && velocity.enabled)
-                    velocity.speed.setFrom(vel).mul(dragParams.inertia.speed);
-            }
-        }
+                // Расчитываем вектор скорости:
+                if (st != null) {
+                    i += 2;
+                    while (i < len) {
+                        vel.x += inputs[i].x - st.x;
+                        vel.y += inputs[i].y - st.y;
+                        i ++;
+                    }
 
-        update(false, Component.UPDATE_SIZE);
+                    // Передаём скорость контенту:
+                    if (vel.len() > dragParams.inertia.dist && velocity.enabled)
+                        velocity.speed.setFrom(vel).mul(dragParams.inertia.speed);
+                }
+            }
+
+            update(false, Component.UPDATE_SIZE);
+
+            // Событие:
+            var e = DragEvent.get(DragEvent.STOP, this);
+            emit(DragEvent.STOP, e);
+            DragEvent.store(e);
+        }
     }
 
 
@@ -230,7 +247,7 @@ class Scroller extends Component
 
     override function set_enabled(value:Bool):Bool {
         if (!value) {
-            content.off(Event.POINTER_MOVE, onContentMove);
+            content.off(PixiEvent.POINTER_MOVE, onContentMove);
             isDragging = false;
         }
 
@@ -355,8 +372,6 @@ class Scroller extends Component
      * Не может быть `null`
      */
     public var scrollV(default, null):ScrollBar;
-
-
 
     /**
      * Параметры управления свапом. (Перетаскивание пальцем/курсором)
@@ -500,6 +515,10 @@ class Scroller extends Component
         Utils.size(sc.skinBg, sc.w, sc.h);
         Utils.size(sc.skinBgDisable, sc.w, sc.h);
         
+        // События: (Диспетчерезируются в конце)
+        var evDrag:DragEvent = null;
+        var evDragOver:DragEvent = null;
+
         // Требуется ещё одно обновление:
         var needUPD = false;
 
@@ -518,18 +537,24 @@ class Scroller extends Component
 
         // Ограничение позиции контента:
         var v:Float = 0;
-        var overdragX:Float = 0;
-        var overdragY:Float = 0;
         if (sc.isDragging) {
             sc.velocity.speed.set(0, 0);
             
             // Режим перетаскивания контента курсором.
+            // Событие:
+            if (Utils.eq(evDrag, null))
+                evDrag = DragEvent.get(DragEvent.MOVE, sc);
+
             // Избыточное натяжение по X:
             v = b.width > outW?(-b.x-(b.width-outW)):-b.x; // <-- content minX
             if (sc.dragContentX > -b.x) {
                 if (sc.dragParams.overdrag.enabled) {
-                    overdragX = Utils.eq(outW,0)?0:(Math.max(-outW, -b.x - sc.dragContentX)/outW);
-                    Utils.set(sc.contentX, -b.x + outW * OVERDRAG(-overdragX, sc.dragParams.overdrag.distMax));
+                    if (Utils.eq(evDragOver, null))
+                        evDragOver = DragEvent.get(DragEvent.OVERDRAG, sc);
+                    evDragOver.overdragX = -b.x - sc.dragContentX;
+                    
+                    var p = Utils.eq(outW,0)?0:(Math.max(-outW, -b.x - sc.dragContentX)/outW);
+                    Utils.set(sc.contentX, -b.x + outW * OVERDRAG(-p, sc.dragParams.overdrag.distMax));
                 }
                 else {
                     Utils.set(sc.contentX, sc.dragContentX);
@@ -537,8 +562,12 @@ class Scroller extends Component
             }
             else if (sc.dragContentX < v) {
                 if (sc.dragParams.overdrag.enabled) {
-                    overdragX = Utils.eq(outW,0)?0:(Math.min(outW, v - sc.dragContentX)/outW);
-                    Utils.set(sc.contentX, v - outW * OVERDRAG(overdragX, sc.dragParams.overdrag.distMax));
+                    if (Utils.eq(evDragOver, null))
+                        evDragOver = DragEvent.get(DragEvent.OVERDRAG, sc);
+                    evDragOver.overdragX = v - sc.dragContentX;
+                    
+                    var p = Utils.eq(outW,0)?0:(Math.min(outW, v - sc.dragContentX)/outW);
+                    Utils.set(sc.contentX, v - outW * OVERDRAG(p, sc.dragParams.overdrag.distMax));
                 }
                 else {
                     Utils.set(sc.contentX, sc.dragContentX);
@@ -552,8 +581,12 @@ class Scroller extends Component
             v = b.height > outH?(-b.y-(b.height-outH)):-b.y; // <-- content minY
             if (sc.dragContentY > -b.y) {
                 if (sc.dragParams.overdrag.enabled) {
-                    overdragY = Utils.eq(outH,0)?0:(Math.max(-outH, -b.y - sc.dragContentY)/outH);
-                    Utils.set(sc.contentY, -b.y + outH * OVERDRAG(-overdragY, sc.dragParams.overdrag.distMax));
+                    if (Utils.eq(evDragOver, null))
+                        evDragOver = DragEvent.get(DragEvent.OVERDRAG, sc);
+                    evDragOver.overdragY = -b.y - sc.dragContentY;
+
+                    var p = Utils.eq(outH,0)?0:(Math.max(-outH, -b.y - sc.dragContentY)/outH);
+                    Utils.set(sc.contentY, -b.y + outH * OVERDRAG(-p, sc.dragParams.overdrag.distMax));
                 }
                 else {
                     Utils.set(sc.contentY, sc.dragContentY);
@@ -561,8 +594,12 @@ class Scroller extends Component
             }
             else if (sc.dragContentY < v) {
                 if (sc.dragParams.overdrag.enabled) {
-                    overdragY = Utils.eq(outH,0)?0:(Math.min(outH, v - sc.dragContentY)/outH);
-                    Utils.set(sc.contentY, v - outH * OVERDRAG(overdragY, sc.dragParams.overdrag.distMax));
+                    if (Utils.eq(evDragOver, null))
+                        evDragOver = DragEvent.get(DragEvent.OVERDRAG, sc);
+                    evDragOver.overdragY = v - sc.dragContentY;
+
+                    var p = Utils.eq(outH,0)?0:(Math.min(outH, v - sc.dragContentY)/outH);
+                    Utils.set(sc.contentY, v - outH * OVERDRAG(p, sc.dragParams.overdrag.distMax));
                 }
                 else {
                     Utils.set(sc.contentY, sc.dragContentY);
@@ -735,10 +772,14 @@ class Scroller extends Component
             sc.updateNext(Component.UPDATE_SIZE);
 
         // События:
-        if (Utils.noeq(overdragX, 0))
-            sc.emit(UIEvent.OVERDRAG_X, sc, overdragX);
-        if (Utils.noeq(overdragY, 0))
-            sc.emit(UIEvent.OVERDRAG_Y, sc, overdragY);
+        if (Utils.noeq(evDrag, null)) {
+            sc.emit(DragEvent.MOVE, evDrag);
+            DragEvent.store(evDrag);
+        }
+        if (Utils.noeq(evDragOver, null)) {
+            sc.emit(DragEvent.OVERDRAG, evDragOver);
+            DragEvent.store(evDragOver);
+        }
     }
 }
 

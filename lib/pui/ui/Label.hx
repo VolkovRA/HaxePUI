@@ -17,8 +17,8 @@ import haxe.extern.EitherType;
  * *пс. На данный момент поддержка растрового шрифта не проверена полностью.*
  * 
  * События:
- *   * `UIEvent.UPDATE` - Текстовая метка обновилась: `Label->changes->Void`. (Передаёт старые изменения)
- *   * *А также все базовые события pixijs: https://pixijs.download/dev/docs/PIXI.Container.html*
+ * - `ComponentEvent.UPDATE` Обновление компонента. (Перерисовка)
+ * - *А также все базовые события pixijs: https://pixijs.download/dev/docs/PIXI.Container.html*
  */
 class Label extends Component
 {

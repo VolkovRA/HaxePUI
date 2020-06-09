@@ -1,7 +1,9 @@
 package pui.ui;
 
+import pui.events.Event;
 import pui.dom.PointerType;
 import pui.ui.Component;
+import pui.pixi.PixiEvent;
 import pixi.core.display.Container;
 import pixi.core.display.DisplayObject;
 import pixi.core.math.Point;
@@ -12,8 +14,8 @@ import haxe.extern.EitherType;
  * Полоса прокрутки.
  * 
  * События:
- * - `UIEvent.CHANGE`           Диспетчерезируется при изменении значения: `ScrollBar.value`. `ScrollBar->value->Void`. (Передаёт старое значение)
- * - `UIEvent.UPDATE`           Компонент обновился: `ScrollBar->changes->Void`. (Передаёт старые изменения)
+ * - `Event.CHANGE`             Диспетчерезируется при изменении значения: `ScrollBar.value`.
+ * - `ComponentEvent.UPDATE`    Обновление компонента. (Перерисовка)
  * - *А также все базовые события pixijs: https://pixijs.download/dev/docs/PIXI.Container.html*
  */
 class ScrollBar extends Component
@@ -62,7 +64,7 @@ class ScrollBar extends Component
         if (Utils.eq(e.data.pointerType, PointerType.MOUSE) && inputMouse != null && inputMouse.length != 0 && inputMouse.indexOf(e.data.button) == -1)
             return;
         
-        thumb.on(Event.POINTER_MOVE, onThumbMove);
+        thumb.on(PixiEvent.POINTER_MOVE, onThumbMove);
         isDragging = true;
 
         POINT.x = e.data.global.x;
@@ -170,16 +172,16 @@ class ScrollBar extends Component
         if (Utils.eq(e.data.pointerType, PointerType.MOUSE) && inputMouse != null && inputMouse.length != 0 && inputMouse.indexOf(e.data.button) == -1)
             return;
 
-        thumb.off(Event.POINTER_MOVE, onThumbMove);
+        thumb.off(PixiEvent.POINTER_MOVE, onThumbMove);
         isDragging = false;
         update(false, Component.UPDATE_SIZE); // <-- Update Thumb
     }
 
-    private function onDecPress(bt:Button):Void {
+    private function onDecPress(e:Event):Void {
         value -= step;
     }
 
-    private function onIncPress(bt:Button):Void {
+    private function onIncPress(e:Event):Void {
         value += step;
     }
 
@@ -189,7 +191,7 @@ class ScrollBar extends Component
         if (Utils.eq(e.data.pointerType, PointerType.MOUSE) && inputMouse != null && inputMouse.length != 0 && inputMouse.indexOf(e.data.button) == -1)
             return;
 
-        skinScroll.on(Event.POINTER_MOVE, onBgMove);
+        skinScroll.on(PixiEvent.POINTER_MOVE, onBgMove);
         onBgMove(e);
     }
 
@@ -199,7 +201,7 @@ class ScrollBar extends Component
         if (Utils.eq(e.data.pointerType, PointerType.MOUSE) && inputMouse != null && inputMouse.length != 0 && inputMouse.indexOf(e.data.button) == -1)
             return;
 
-        skinScroll.off(Event.POINTER_MOVE, onBgMove);
+        skinScroll.off(PixiEvent.POINTER_MOVE, onBgMove);
     }
 
     private function onBgMove(e:InteractionEvent):Void {
@@ -233,7 +235,7 @@ class ScrollBar extends Component
                 value = ((POINT.x - fx) / fw) * (max - min) + min;
             }
             else {
-                skinScroll.off(Event.POINTER_MOVE, onBgMove);
+                skinScroll.off(PixiEvent.POINTER_MOVE, onBgMove);
             }
         }
         else {
@@ -259,7 +261,7 @@ class ScrollBar extends Component
                 value = ((POINT.y - fy) / fh) * (max - min) + min;
             }
             else {
-                skinScroll.off(Event.POINTER_MOVE, onBgMove);
+                skinScroll.off(PixiEvent.POINTER_MOVE, onBgMove);
             }
         }
     }
@@ -328,14 +330,17 @@ class ScrollBar extends Component
     public var value(default, set):Float = 0;
     function set_value(value2:Float):Float {
         var v = calcValue(value2);
-        var old = value;
         
         if (Utils.eq(v, value))
             return value2;
 
         value = v;
         update(false, Component.UPDATE_SIZE);
-        emit(UIEvent.CHANGE, this, old);
+
+        var e = Event.get(Event.CHANGE, this);
+        emit(Event.CHANGE, e);
+        Event.store(e);
+
         return value2;
     }
 
@@ -384,13 +389,13 @@ class ScrollBar extends Component
 
         if (Utils.noeq(decBt, null)) {
             Utils.hide(this, decBt);
-            decBt.off(UIEvent.PRESS, onDecPress);
+            decBt.off(Event.PRESS, onDecPress);
         }
 
         decBt = value;
 
         if (Utils.noeq(decBt, null)) {
-            decBt.on(UIEvent.PRESS, onDecPress);
+            decBt.on(Event.PRESS, onDecPress);
         }
 
         update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
@@ -415,13 +420,13 @@ class ScrollBar extends Component
 
         if (Utils.noeq(incBt, null)) {
             Utils.hide(this, incBt);
-            incBt.off(UIEvent.PRESS, onIncPress);
+            incBt.off(Event.PRESS, onIncPress);
         }
         
         incBt = value;
 
         if (Utils.noeq(incBt, null)) {
-            incBt.on(UIEvent.PRESS, onIncPress);
+            incBt.on(Event.PRESS, onIncPress);
         }
 
         update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
@@ -447,19 +452,19 @@ class ScrollBar extends Component
         if (Utils.noeq(thumb, null)) {
             Utils.hide(this, thumb);
 
-            thumb.off(Event.POINTER_DOWN, onThumbDown);
-            thumb.off(Event.POINTER_MOVE, onThumbMove);
-            thumb.off(Event.POINTER_UP, onThumbUp);
-            thumb.off(Event.POINTER_UP_OUTSIDE, onThumbUp);
+            thumb.off(PixiEvent.POINTER_DOWN, onThumbDown);
+            thumb.off(PixiEvent.POINTER_MOVE, onThumbMove);
+            thumb.off(PixiEvent.POINTER_UP, onThumbUp);
+            thumb.off(PixiEvent.POINTER_UP_OUTSIDE, onThumbUp);
         }
 
         thumb = value;
         isDragging = false;
 
         if (Utils.noeq(thumb, null)) {
-            thumb.on(Event.POINTER_DOWN, onThumbDown);
-            thumb.on(Event.POINTER_UP, onThumbUp);
-            thumb.on(Event.POINTER_UP_OUTSIDE, onThumbUp);
+            thumb.on(PixiEvent.POINTER_DOWN, onThumbDown);
+            thumb.on(PixiEvent.POINTER_UP, onThumbUp);
+            thumb.on(PixiEvent.POINTER_UP_OUTSIDE, onThumbUp);
         }
 
         update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
@@ -534,18 +539,18 @@ class ScrollBar extends Component
 
         if (Utils.noeq(skinScroll, null)) {
             Utils.hide(this, skinScroll);
-            skinScroll.off(Event.POINTER_DOWN, onBgDown);
-            skinScroll.off(Event.POINTER_MOVE, onBgMove);
-            skinScroll.off(Event.POINTER_UP, onBgUp);
-            skinScroll.off(Event.POINTER_UP_OUTSIDE, onBgUp);
+            skinScroll.off(PixiEvent.POINTER_DOWN, onBgDown);
+            skinScroll.off(PixiEvent.POINTER_MOVE, onBgMove);
+            skinScroll.off(PixiEvent.POINTER_UP, onBgUp);
+            skinScroll.off(PixiEvent.POINTER_UP_OUTSIDE, onBgUp);
         }
 
         skinScroll = value;
 
         if (Utils.noeq(skinScroll, null)) {
-            skinScroll.on(Event.POINTER_DOWN, onBgDown);
-            skinScroll.on(Event.POINTER_UP, onBgUp);
-            skinScroll.on(Event.POINTER_UP_OUTSIDE, onBgUp);
+            skinScroll.on(PixiEvent.POINTER_DOWN, onBgDown);
+            skinScroll.on(PixiEvent.POINTER_UP, onBgUp);
+            skinScroll.on(PixiEvent.POINTER_UP_OUTSIDE, onBgUp);
         }
 
         update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);

@@ -4,6 +4,7 @@ import pixi.core.display.Container;
 import pui.*;
 import pui.ui.*;
 import pui.geom.*;
+import pui.events.*;
 import pixi.core.Application;
 import pixi.core.graphics.Graphics;
 import js.Browser;
@@ -31,7 +32,7 @@ class Main
 
         // Create theme:
         Theme.current = new MyTheme(app);
-        Theme.current.onUpdateEnd = onUpdateUI;
+        Theme.current.on(ThemeEvent.UPDATE_FINISH, onThemeUpdateFinish);
 
         // Create UI:
         var title:Label = new Label();
@@ -76,7 +77,6 @@ class Main
         sch.step = 2;
         sch.orientation = Orientation.HORIZONTAL;
         sch.pointMode = true;
-        sch.on(UIEvent.CHANGE, function(sch, value){ trace(sch.value); });
         //sch.debug = true;
         app.stage.addChild(sch);
 
@@ -87,28 +87,27 @@ class Main
         sch2.max = 80;
         sch2.step = 2;
         sch2.orientation = Orientation.VERTICAL;
-        sch2.on(UIEvent.CHANGE, function(sch, value){ trace(sch2.value); });
         //sch2.debug = true;
         app.stage.addChild(sch2);
 
         var sc = new Scroller();
         sc.x = 170;
         sc.y = 100;
-        sc.w = 500;
-        sc.h = 300;
+        sc.w = 300;
+        sc.h = 200;
         //sc.overflowX = Overflow.SCROLL;
         //sc.overflowY = Overflow.SCROLL;
         sc.velocity.speed.x = 300;
         sc.velocity.speed.y = 100;
         //sc.debug = true;
-        //addCircles(sc.content);
-        addBox(sc.content);
+        addCircles(sc.content);
+        //addBox(sc.content);
         app.stage.addChild(sc);
     }
 
-    static private function onUpdateUI(theme:MyTheme):Void {
-        if (theme.updateCount > 0)
-            trace("Components updated: " + theme.updateCount);
+    static private function onThemeUpdateFinish(e:ThemeEvent):Void {
+        if (e.updates > 0)
+            trace("Components updated: " + e.updates);
     }
     static private function addCircles(container:Container):Void {
         var i = 100;

@@ -3,6 +3,7 @@ package pui.ui;
 import haxe.extern.EitherType;
 import js.lib.Error;
 import pui.dom.Mouse;
+import pui.events.ComponentEvent;
 import pixi.core.display.Container;
 import pixi.core.display.DisplayObject;
 import pixi.core.graphics.Graphics;
@@ -15,7 +16,7 @@ import pixi.core.graphics.Graphics;
  * обновления перед началом цикла рендера. (Смотрите свойство: `changes`)
  * 
  * События:
- * - `UIEvent.UPDATE` - Компонент обновился: `Component->changes->Void`. (Передаёт старые изменения)
+ * - `ComponentEvent.UPDATE` Обновление компонента. (Перерисовка)
  * - *А также все базовые события pixijs: https://pixijs.download/dev/docs/PIXI.Container.html*
  */
 class Component extends Container
@@ -113,7 +114,7 @@ class Component extends Container
      * Ожидание автоматической инициализации компонента:
      * ```
      * var bt:Component = new Button();
-     * bt.once(UIEvent.UPDATE, function(component:Component){ trace("Кнопка инициализирована!"); });
+     * bt.once(ComponentEvent.UPDATE, function(e:ComponentEvent){ trace("Кнопка инициализирована!"); });
      * ```
      * 
      * По умолчанию: `false.`
@@ -317,9 +318,9 @@ class Component extends Container
     /**
      * Активность компонента.
      * 
-     * Обратите внимание, что в выключенном состоянии компонент по прежнему будет
-     * отправлять базовые события `Event` PixiJS. Функциональность событий `UIEvent`
-     * зависит от конкретной реализации типа компонента и может быть отключена.
+     * В выключенном состоянии компонент может не отправлять некоторые события
+     * взаимодействия с пользователем. Это зависит от конкретного типа компонента.
+     * Так же выключенный компонент может иметь собственное оформление.
      * 
      * При установке нового значения регистрируются изменения в компоненте:
      * - `Component.UPDATE_LAYERS` - Для переключения фона выключенного состояния.
@@ -600,7 +601,8 @@ class Component extends Container
      */
     @:allow(pui.Theme)
     private function onComponentUpdate():Void {
-        var oldc = changes;
+        var e = ComponentEvent.get(ComponentEvent.UPDATE, this);
+        e.changes = changes;
         
         // Обновление:
         if (Utils.flagsAND(changes, Component.UPDATE_FULL)) {
@@ -623,7 +625,9 @@ class Component extends Container
         // Завершение и события:
         changes = 0;
         isInit = true;
-        emit(UIEvent.UPDATE, this, oldc);
+        
+        emit(ComponentEvent.UPDATE, e);
+        ComponentEvent.store(e);
     }
 
     /**

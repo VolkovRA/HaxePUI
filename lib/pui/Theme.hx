@@ -7,9 +7,12 @@ import pui.ui.Label;
 import pui.ui.Component;
 import pui.ui.ScrollBar;
 import pui.ui.Scroller;
+import pui.pixi.PixiEvent;
+import pui.events.ThemeEvent;
 import pixi.core.Application;
 import pixi.core.graphics.Graphics;
 import pixi.core.text.Text;
+import pixi.interaction.EventEmitter;
 
 /**
  * Тема оформления.
@@ -31,8 +34,12 @@ import pixi.core.text.Text;
  * 
  * Вы **можете** назначить любой экземпляр созданной темы каждому компоненту интерфейса
  * отдельно, чтобы использовать несколько тем одновременно.
+ * 
+ * События:
+ * - `ThemeEvent.UPDATE_START`      Испускается в каждом кадре перед запуском нового цикла обновления всех компонентов.
+ * - `ThemeEvent.UPDATE_FINISH`     Испускается в каждом кадре после завершения цикла обновления всех компонентов.
  */
-class Theme
+class Theme extends EventEmitter
 {
     static private inline var COLOR_BLACK:Int = 0x000000;
     static private inline var COLOR_GRAY_DARK:Int = 0x212121;
@@ -46,11 +53,13 @@ class Theme
      * @param name Название темы.
      */
     public function new(application:Application, name:String = "Новая тема") {
+        super();
+        
         this.application = application;
         this.name = name;
 
         // События:
-        application.renderer.on(Event.PRE_RENDER, onUpdateUI);
+        application.renderer.on(PixiEvent.PRE_RENDER, onUpdateUI);
     }    
 
 
@@ -125,51 +134,6 @@ class Theme
     public var updateMax:Int = 100;
 
     /**
-     * Количество обновлённых компонентов в последнем цикле рендера.
-     * 
-     * Содержит число вызовов метода: `Component.onComponentUpdate` этой темой в рамках последнего цикла рендера.
-     * Это значение не учитывает ручное обновление компонентов: `Component.update(true)`.
-     * Может быть полезно для отслеживания количества перерисованных компонентов за один кадр.
-     * 
-     * *пс. Это значение сбрасывается перед каждым, новым циклом рендера.*
-     * 
-     * По умолчанию: `0`.
-     */
-    public var updateCount:Int = 0;
-
-    /**
-     * Колбек начала цикла обновления: `function(Theme):Void`
-     * 
-     * Если задан, вызывается перед началом обновления всех компонентов этой темы во время цикла рендера.
-     * Может быть полезно, когда необходимо собрать статистику о количестве перерисованных компонентов.
-     * 
-     * *пс. Этот вызов работает в рамках события pixi: `Event.PRE_RENDER`.*
-     * 
-     * По умолчанию: `null`.
-     * 
-     * @see `Theme.updateCount`
-     * @see `Theme.onUpdateEnd`
-     */
-    public var onUpdateStart:Dynamic->Void = null;
-
-    /**
-     * Колбек завершения обновления всех компонентов этой темы: `function(Theme):Void`
-     * 
-     * Если задан, вызывается после завершения обновления всех компонентов во время цикла рендера.
-     * Может быть полезно, когда необходимо собрать статистику о количестве перерисованных компонентов.
-     * Обратите внимание, что новые вызовы `Component.update()` приведут к обновлению этих компонентов
-     * уже в следующем кадре.
-     * 
-     * *пс. Этот вызов работает в рамках события pixi: `Event.PRE_RENDER`.*
-     * 
-     * По умолчанию: `null`.
-     * 
-     * @see `Theme.updateCount`
-     * @see `Theme.onUpdateStart`
-     */
-    public var onUpdateEnd:Dynamic->Void = null;
-
-    /**
      * Прошедшее время с момента последнего цикла обновления. (sec)
      * 
      * Расчитывается заного перед каждым новым циклом рендера и используется
@@ -239,16 +203,22 @@ class Theme
     @:noDoc
     @:noCompletion
     private function onUpdateUI():Void {
-        if (Utils.noeq(onUpdateStart, null))
-            onUpdateStart(this);
 
-        // Цикл обновления всех компонентов.
+        // Запуск цикла рендера.
+        // Разное:
+        var updates:Int = 0;
+
+        // Событие начала:
+        var e = ThemeEvent.get(ThemeEvent.UPDATE_START, this);
+        emit(ThemeEvent.UPDATE_START, e);
+        ThemeEvent.store(e);
+
         // Прошедшее время:
         var ct = Utils.uptime() / 1000;
         dt = ct - timeUPD;
         timeUPD = ct;
 
-        // Добавляем компоненты из отложенного вызова:
+        // Добавляем компоненты из предыдущего, отложенного вызова:
         var i = 0;
         while (i < updateLenNext) {
             updateItemsNext[i].update(false, updateItemsFlagsNext[i]);
@@ -262,7 +232,6 @@ class Theme
         // 2. Список может содержать дубли.
 
         i = 0;
-        updateCount = 0;
         while (i < updateLen) {
             if (    // Пропускаем уже обновлённые:
                     Utils.noeq(updateItems[i].changes, 0) &&
@@ -275,7 +244,7 @@ class Theme
             ) {
                 if (updateItems[i].themeRenderCount < updateMax) {
                     updateItems[i].onComponentUpdate();
-                    updateCount ++;
+                    updates ++;
                 }
                 else {
                     Browser.console.error("Компонент " + updateItems[i].toString() + " достиг лимита количества обновлений в одном цикле рендера (frame=" + frame + ") и будет пропущен, проверьте свойство: pui.Theme.updateMax", updateItems[i]);
@@ -288,8 +257,11 @@ class Theme
         updateLen = 0;
         frame ++;
 
-        if (Utils.noeq(onUpdateEnd, null))
-            onUpdateEnd(this);
+        // Событие завершения:
+        var e = ThemeEvent.get(ThemeEvent.UPDATE_FINISH, this);
+        e.updates = updates;
+        emit(ThemeEvent.UPDATE_FINISH, e);
+        ThemeEvent.store(e);
     }
 
     /**
@@ -515,18 +487,15 @@ class Theme
      * Не используйте тему после того, как вы вызвали этот метод.
      */
     public function destroy():Void {
-        application.renderer.off(Event.POST_RENDER, onUpdateUI);
+        application.renderer.off(PixiEvent.POST_RENDER, onUpdateUI);
 
         styles = null;
         application = null;
         updateItems = null;
         updateItemsNext = null;
         updateItemsFlagsNext = null;
-        onUpdateStart = null;
-        onUpdateEnd = null;
         updateLen = 0;
         updateLenNext = 0;
-        updateCount = 0;
     }
 
 

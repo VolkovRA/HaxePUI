@@ -2,7 +2,9 @@ package pui.ui;
 
 import js.Browser;
 import pui.ui.Component;
+import pui.events.Event;
 import pui.dom.PointerType;
+import pui.pixi.PixiEvent;
 import pixi.core.display.Container;
 import pixi.core.display.DisplayObject;
 import pixi.interaction.InteractionEvent;
@@ -13,11 +15,11 @@ import haxe.extern.EitherType;
  * Может содержать текст и/или картинку.
  * 
  * События:
- * - `UIEvent.PRESS`            Нажатие на кнопку. Это событие не диспетчерезируется, если кнопка была выключена: `enabled=false`. (`Button->Void`)
- * - `UIEvent.CLICK`            Клик по кнопке. Не путайте с `Event.CLICK`. Это событие не диспетчерезируется, если кнопка была выключена: `enabled=false`. (`Button->Void`)
- * - `UIEvent.DOUBLE_CLICK`     Двойной клик по кнопке. Необходимо включить в настройках кнопки: `Button.dblClick.enabled = true`.
- * - `UIEvent.STATE`            Состояние кнопки изменено: `Button->ButtonState->Void`. (Передаёт старое состояние)
- * - `UIEvent.UPDATE`           Кнопка обновилась: `Button->changes->Void`. (Передаёт старые изменения)
+ * - `Event.PRESS`              Нажатие на кнопку. Это событие не диспетчерезируется, если кнопка была выключена: `enabled=false`.
+ * - `Event.CLICK`              Клик по кнопке. Не путайте с событиями PixiJS. Это событие не диспетчерезируется, если кнопка была выключена: `enabled=false`.
+ * - `Event.DOUBLE_CLICK`       Двойной клик по кнопке. Необходимо отдельно включить в настройках кнопки: `Button.dblClick.enabled = true`.
+ * - `Event.STATE`              Состояние кнопки изменено.
+ * - `ComponentEvent.UPDATE`    Обновление компонента. (Перерисовка)
  * - *А также все базовые события pixijs: https://pixijs.download/dev/docs/PIXI.Container.html*
  */
 class Button extends Component
@@ -51,11 +53,11 @@ class Button extends Component
         Utils.set(this.updateLayers, Button.icoDown);
         Utils.set(this.updateSize, Button.pos8);
 
-        on(Event.POINTER_OVER, onRollOver);
-        on(Event.POINTER_OUT, onRollOut);
-        on(Event.POINTER_DOWN, onDown);
-        on(Event.POINTER_UP, onUp);
-        on(Event.POINTER_UP_OUTSIDE, onUpOutside);
+        on(PixiEvent.POINTER_OVER, onRollOver);
+        on(PixiEvent.POINTER_OUT, onRollOut);
+        on(PixiEvent.POINTER_DOWN, onDown);
+        on(PixiEvent.POINTER_UP, onUp);
+        on(PixiEvent.POINTER_UP_OUTSIDE, onUpOutside);
     }
 
 
@@ -90,7 +92,6 @@ class Button extends Component
         }
     }
     private function onDown(e:InteractionEvent):Void {
-        trace(e.data.isPrimary, e.data.button, e.data.buttons);
         if (!enabled || (inputPrimary && !e.data.isPrimary))
             return;
         if (Utils.eq(e.data.pointerType, PointerType.MOUSE) && inputMouse != null && inputMouse.length != 0 && inputMouse.indexOf(e.data.button) == -1)
@@ -104,7 +105,9 @@ class Button extends Component
             autopressTimeout = Browser.window.setTimeout(function(){
                 if (autopressInterval == 0) {
                     autopressInterval = Browser.window.setInterval(function(){
-                        emit(UIEvent.PRESS);
+                        var e = Event.get(Event.PRESS, this);
+                        emit(Event.PRESS, e);
+                        Event.store(e);
                     }, autopress.interval);
                 }
             }, autopress.delay);
@@ -121,7 +124,9 @@ class Button extends Component
             var pre = history[e.data.identifier];
             if (pre == null || item.t > pre.t + dblClick.time) {
                 history[e.data.identifier] = item;
-                emit(UIEvent.PRESS, this);
+                var e = Event.get(Event.PRESS, this);
+                emit(Event.PRESS, e);
+                Event.store(e);
                 return;
             }
 
@@ -129,24 +134,32 @@ class Button extends Component
             var dy = pre.y - item.y;
             if (Math.abs(dx*dx + dy*dy) > dblClick.dist * dblClick.dist) {
                 history[e.data.identifier] = item;
-                emit(UIEvent.PRESS, this);
+                var e = Event.get(Event.PRESS, this);
+                emit(Event.PRESS, e);
+                Event.store(e);
                 return;
             }
 
             history[e.data.identifier] = null;
             
-            emit(UIEvent.PRESS, this);
-            emit(UIEvent.DOUBLE_CLICK, this);
+            var e = Event.get(Event.PRESS, this);
+            var e2 = Event.get(Event.DOUBLE_CLICK, this);
+            emit(Event.PRESS, e);
+            emit(Event.DOUBLE_CLICK, e2);
+            Event.store(e);
+            Event.store(e2);
             return;
         }
         
-        emit(UIEvent.PRESS, this);
+        var e = Event.get(Event.PRESS, this);
+        emit(Event.PRESS, e);
+        Event.store(e);
     }
     private function onUp(e:InteractionEvent):Void {
         if (!enabled || (inputPrimary && !e.data.isPrimary))
-            return;trace(1);
+            return;
         if (Utils.eq(e.data.pointerType, PointerType.MOUSE) && inputMouse != null && inputMouse.length != 0 && inputMouse.indexOf(e.data.button) == -1)
-            return;trace(2);
+            return;
         
         downCurrentButton = false;
         state = ButtonState.HOVER;
@@ -161,7 +174,9 @@ class Button extends Component
             autopressTimeout = 0;
         }
 
-        emit(UIEvent.CLICK, this);
+        var e = Event.get(Event.CLICK, this);
+        emit(Event.CLICK, e);
+        Event.store(e);
     }
     private function onUpOutside(e:InteractionEvent):Void {
         if (!enabled || (inputPrimary && !e.data.isPrimary))
@@ -284,10 +299,13 @@ class Button extends Component
         if (Utils.eq(value, state))
             return value;
 
-        var olds = state;
         state = value;
         update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
-        emit(UIEvent.STATE, this, olds);
+
+        var e = Event.get(Event.STATE, this);
+        emit(Event.STATE, e);
+        Event.store(e);
+
         return value;
     }
 
@@ -1601,7 +1619,7 @@ typedef DoubleClickParams =
 {
     /**
      * Двойное нажатие включено.
-     * Если `true` - Кнопка будет посылать события двойные нажатия: `UIEvent.DOUBLE_CLICK`.
+     * Если `true` - Кнопка будет посылать события двойные нажатия: `Event.DOUBLE_CLICK`.
      * 
      * По умолчанию: `false` (Выключено)
      */
@@ -1632,7 +1650,7 @@ typedef AutoPressParams =
 {
     /**
      * Авто нажатие включено.
-     * Если `true` - Кнопка будет посылать события нажатия при длительном нажатии на кнопку: `UIEvent.PRESS`.
+     * Если `true` - Кнопка будет посылать события нажатия при длительном нажатии на кнопку: `Event.PRESS`.
      * 
      * По умолчанию: `false` (Выключено)
      */
