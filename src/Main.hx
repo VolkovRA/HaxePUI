@@ -1,6 +1,9 @@
 package;
 
+import pixi.core.display.Container;
 import pui.*;
+import pui.ui.*;
+import pui.geom.*;
 import pixi.core.Application;
 import pixi.core.graphics.Graphics;
 import js.Browser;
@@ -19,8 +22,8 @@ class Main
 
         // Start pixi:
         app = new Application({
-            width: 550,
-            height: 400,
+            width: 800,
+            height: 500,
             backgroundColor: 0x101010,
         });
         app.start();
@@ -63,7 +66,7 @@ class Main
         bt.paddingPress = {top: 1, left:0, right:0, bottom:0 };
         //bt.enabled = false;
         app.stage.addChild(bt);
-        bt.mouseInput = null;
+        bt.inputMouse = null;
 
         var sch = new ScrollBar();
         sch.x = 5;
@@ -88,11 +91,59 @@ class Main
         //sch2.debug = true;
         app.stage.addChild(sch2);
 
-        //var list = new List();
+        var sc = new Scroller();
+        sc.x = 170;
+        sc.y = 100;
+        sc.w = 500;
+        sc.h = 300;
+        //sc.overflowX = Overflow.SCROLL;
+        //sc.overflowY = Overflow.SCROLL;
+        sc.velocity.speed.x = 300;
+        sc.velocity.speed.y = 100;
+        //sc.debug = true;
+        //addCircles(sc.content);
+        addBox(sc.content);
+        app.stage.addChild(sc);
     }
 
     static private function onUpdateUI(theme:MyTheme):Void {
         if (theme.updateCount > 0)
             trace("Components updated: " + theme.updateCount);
+    }
+    static private function addCircles(container:Container):Void {
+        var i = 100;
+        while (i-- > 0) {
+            var s = new Graphics();
+            
+            s.beginFill(getRndColor(), Math.random() * 0.5 + 0.5);
+            s.drawCircle(0, 0, Math.random() * 10 + 5);
+            s.x = Math.random() * 800;
+            s.y = Math.random() * 200;
+            container.addChild(s);
+        }
+    }
+    static private function addBox(container:Container):Void {
+        var g = new Graphics();
+        var x = -100;
+        var y = -100;
+        var w = 800;
+        var h = 600;
+
+        g.beginFill(0xff0000);
+        g.drawRect(x, y, w, h);
+        g.beginFill(0xffff00);
+        g.drawRect(x, y, 5, 5);
+        g.drawRect(x + w-5, y, 5, 5);
+        g.drawRect(x, y + h-5, 5, 5);
+        g.drawRect(x + w-5, y + h-5, 5, 5);
+
+        container.addChild(g);
+    }
+    static public function getRndColor():Int {
+        var r = Math.floor(Math.random() * 0xff) << 16;
+        var g = Math.floor(Math.random() * 0xff) << 8;
+        var b = Math.floor(Math.random() * 0xff);
+
+        return r + g + b;
     }
 }

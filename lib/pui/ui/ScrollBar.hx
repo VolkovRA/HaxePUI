@@ -1,7 +1,7 @@
-package pui;
+package pui.ui;
 
-import pui.Component;
-import pui.Mouse;
+import pui.dom.PointerType;
+import pui.ui.Component;
 import pixi.core.display.Container;
 import pixi.core.display.DisplayObject;
 import pixi.core.math.Point;
@@ -57,9 +57,9 @@ class ScrollBar extends Component
     ///////////////////
 
     private function onThumbDown(e:InteractionEvent):Void {
-        if (!enabled || (isPrimary && !e.data.isPrimary))
+        if (!enabled || (inputPrimary && !e.data.isPrimary))
             return;
-        if (Utils.eq(e.data.pointerType, "mouse") && mouseInput != null && mouseInput.length != 0 && mouseInput.indexOf(e.data.button) == -1)
+        if (Utils.eq(e.data.pointerType, PointerType.MOUSE) && inputMouse != null && inputMouse.length != 0 && inputMouse.indexOf(e.data.button) == -1)
             return;
         
         thumb.on(Event.POINTER_MOVE, onThumbMove);
@@ -73,7 +73,7 @@ class ScrollBar extends Component
     }
 
     private function onThumbMove(e:InteractionEvent):Void {
-        if (!enabled || (isPrimary && !e.data.isPrimary))
+        if (!enabled || (inputPrimary && !e.data.isPrimary))
             return;
 
         POINT.x = e.data.global.x;
@@ -165,9 +165,9 @@ class ScrollBar extends Component
     }
 
     private function onThumbUp(e:InteractionEvent):Void {
-        if (!enabled || (isPrimary && !e.data.isPrimary))
+        if (!enabled || (inputPrimary && !e.data.isPrimary))
             return;
-        if (Utils.eq(e.data.pointerType, "mouse") && mouseInput != null && mouseInput.length != 0 && mouseInput.indexOf(e.data.button) == -1)
+        if (Utils.eq(e.data.pointerType, PointerType.MOUSE) && inputMouse != null && inputMouse.length != 0 && inputMouse.indexOf(e.data.button) == -1)
             return;
 
         thumb.off(Event.POINTER_MOVE, onThumbMove);
@@ -184,9 +184,9 @@ class ScrollBar extends Component
     }
 
     private function onBgDown(e:InteractionEvent):Void {
-        if (!enabled || (isPrimary && !e.data.isPrimary))
+        if (!enabled || (inputPrimary && !e.data.isPrimary))
             return;
-        if (Utils.eq(e.data.pointerType, "mouse") && mouseInput != null && mouseInput.length != 0 && mouseInput.indexOf(e.data.button) == -1)
+        if (Utils.eq(e.data.pointerType, PointerType.MOUSE) && inputMouse != null && inputMouse.length != 0 && inputMouse.indexOf(e.data.button) == -1)
             return;
 
         skinScroll.on(Event.POINTER_MOVE, onBgMove);
@@ -194,16 +194,16 @@ class ScrollBar extends Component
     }
 
     private function onBgUp(e:InteractionEvent):Void {
-        if (!enabled || (isPrimary && !e.data.isPrimary))
+        if (!enabled || (inputPrimary && !e.data.isPrimary))
             return;
-        if (Utils.eq(e.data.pointerType, "mouse") && mouseInput != null && mouseInput.length != 0 && mouseInput.indexOf(e.data.button) == -1)
+        if (Utils.eq(e.data.pointerType, PointerType.MOUSE) && inputMouse != null && inputMouse.length != 0 && inputMouse.indexOf(e.data.button) == -1)
             return;
 
         skinScroll.off(Event.POINTER_MOVE, onBgMove);
     }
 
     private function onBgMove(e:InteractionEvent):Void {
-        if (!enabled || (isPrimary && !e.data.isPrimary))
+        if (!enabled || (inputPrimary && !e.data.isPrimary))
             return;
 
         POINT.x = e.data.global.x;
@@ -278,28 +278,6 @@ class ScrollBar extends Component
     }
 
     /**
-     * Использовать только основное устройство ввода.
-     * 
-     * Основное устройство - это мышь, первое касание на сенсорном устройстве или т.п.
-     * - Если `true` - Скроллбар будет реагировать только на ввод с основного устройства.
-     * - Если `false` - Скроллбар будет реагировать на ввод с любого устройства.
-     * 
-     * По умолчанию: `true`
-     * 
-     * @see PointerEvent.isPrimary: https://developer.mozilla.org/en-US/docs/Web/API/PointerEvent/isPrimary
-     */
-    public var isPrimary:Bool = true;
-
-    /**
-     * Клавишы реагирования.
-     * Позволяет установить, на какие кнопки мыши будет реагировать компонент.
-     * - Если `null` или пустой массив - Скроллбар реагирует на любые клавишы.
-     * 
-     * По умолчанию: `[Mouse.MAIN]` (Только главная кнопка мыши)
-     */
-    public var mouseInput:Array<MouseKey> = [Mouse.MAIN];
-
-    /**
      * Минимальное значение.
      * 
      * При установке нового значения регистрируются изменения в компоненте:
@@ -362,7 +340,7 @@ class ScrollBar extends Component
     }
 
     /**
-     * Смещение значения при нажатии на кнопок: `incBt` и `decBt`.
+     * Смещение значения при нажатии кнопок: `incBt` и `decBt`.
      * 
      * По умолчанию: `0.02`
      */
@@ -769,7 +747,7 @@ class ScrollBar extends Component
                 }
             }
             else {
-                sc.thumb.w = Math.round(fw * sc.thumbScale);
+                sc.thumb.w = Math.max(3, Math.round(fw * sc.thumbScale)); // 3px min size
                 sc.thumb.h = Math.max(1, Math.round(sc.h - p.top - p.bottom));
                 sc.thumb.update(true);
 
@@ -843,7 +821,7 @@ class ScrollBar extends Component
             }
             else {
                 sc.thumb.w = Math.max(1, Math.round(sc.w - p.left - p.right));
-                sc.thumb.h = Math.round(fh * sc.thumbScale);
+                sc.thumb.h = Math.max(3, Math.round(fh * sc.thumbScale)); // 3px min size
                 sc.thumb.update(true);
 
                 if (!sc.isDragging) {

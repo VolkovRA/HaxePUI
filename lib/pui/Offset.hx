@@ -15,12 +15,12 @@ typedef Offset =
      * Левый отступ. (px)
      */
     var left:Float;
-    
+
     /**
      * Правый отступ. (px)
      */
     var right:Float;
-    
+
     /**
      * Нижний отступ. (px)
      */

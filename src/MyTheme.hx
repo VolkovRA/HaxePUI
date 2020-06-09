@@ -1,6 +1,7 @@
 package;
 
 import pui.*;
+import pui.ui.*;
 import pixi.core.Application;
 import pixi.core.graphics.Graphics;
 import pixi.core.text.Text;

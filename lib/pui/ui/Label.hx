@@ -1,7 +1,7 @@
-package pui;
+package pui.ui;
 
 import js.Syntax;
-import pui.Component;
+import pui.ui.Component;
 import pixi.core.display.DisplayObject;
 import pixi.core.text.Text;
 import pixi.core.text.TextMetrics;

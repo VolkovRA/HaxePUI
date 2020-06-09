@@ -2,7 +2,11 @@ package pui;
 
 import js.Browser;
 import haxe.DynamicAccess;
-import pui.ScrollBar;
+import pui.ui.Button;
+import pui.ui.Label;
+import pui.ui.Component;
+import pui.ui.ScrollBar;
+import pui.ui.Scroller;
 import pixi.core.Application;
 import pixi.core.graphics.Graphics;
 import pixi.core.text.Text;
@@ -166,6 +170,16 @@ class Theme
     public var onUpdateEnd:Dynamic->Void = null;
 
     /**
+     * Прошедшее время с момента последнего цикла обновления. (sec)
+     * 
+     * Расчитывается заного перед каждым новым циклом рендера и используется
+     * для анимирования компонентов.
+     * 
+     * По умолчанию: `0`
+     */
+    public var dt(default, null):Float = 0;
+
+    /**
      * Список компонентов для обновления в текущем цикле рендера.
      * Используется внутренней реализацией для обновления компонентов.
      */
@@ -181,6 +195,35 @@ class Theme
     @:noCompletion
     private var updateLen:Int = 0;
 
+    /**
+     * Количество компонентов для обновления в следующем цикле рендера.
+     * Используется внутренней реализацией для обновления компонентов.
+     */
+    @:noDoc
+    @:noCompletion
+    private var updateLenNext:Int = 0;
+
+    /**
+     * Список компонентов для обновления в следующем цикле рендера.
+     * Используется внутренней реализацией для обновления компонентов.
+     */
+    @:noDoc
+    @:noCompletion
+    private var updateItemsNext:Array<Component> = new Array();
+
+    /**
+     * Список изменений в компонентах для обновления в следующем цикле рендера.
+     * Этот массив связан с `updateItemsNext`.
+     */
+    @:noDoc
+    @:noCompletion
+    private var updateItemsFlagsNext:Array<BitMask> = new Array();
+
+    /**
+     * Дата последнего цикла обновления с момента запуска приложения. (sec)
+     * Используется внутренней реализацией для расчёта прошедшего времени.
+     */
+    private var timeUPD:Float = Utils.uptime() / 1000;
 
 
     ////////////////
@@ -199,13 +242,27 @@ class Theme
         if (Utils.noeq(onUpdateStart, null))
             onUpdateStart(this);
 
-        // Обновление всех компонентов.
-        // Их количество в списке может увеличиваться по мере работы цикла.
-        // Список может содержать дубли.
+        // Цикл обновления всех компонентов.
+        // Прошедшее время:
+        var ct = Utils.uptime() / 1000;
+        dt = ct - timeUPD;
+        timeUPD = ct;
 
-        updateCount = 0;
-
+        // Добавляем компоненты из отложенного вызова:
         var i = 0;
+        while (i < updateLenNext) {
+            updateItemsNext[i].update(false, updateItemsFlagsNext[i]);
+            updateItemsNext[i] = null;
+            i ++;
+        }
+        updateLenNext = 0;
+
+        // Основной цикл обновления.
+        // 1. Количество в списке может увеличиваться по мере работы цикла.
+        // 2. Список может содержать дубли.
+
+        i = 0;
+        updateCount = 0;
         while (i < updateLen) {
             if (    // Пропускаем уже обновлённые:
                     Utils.noeq(updateItems[i].changes, 0) &&
@@ -241,7 +298,7 @@ class Theme
      * 
      * @param component Компонент.
      */
-    @:allow(pui.Component) 
+    @:allow(pui.ui.Component) 
     @:noDoc
     @:noCompletion
     private function addUpdate(component:Component):Void {
@@ -252,6 +309,22 @@ class Theme
         
         component.themeRenderIndex = updateLen;
         updateItems[updateLen++] = component;
+    }
+
+    /**
+     * Добавить компонент для обновления в следующем цикле рендера.
+     * Метод используется внутренней реализацией для обновления компонентов.
+     * 
+     * @param component Компонент.
+     * @param flags Будущие изменения.
+     */
+    @:allow(pui.ui.Component) 
+    @:noDoc
+    @:noCompletion
+    private function addUpdateNext(component:Component, flags:BitMask):Void {
+        updateItemsNext[updateLenNext] = component;
+        updateItemsFlagsNext[updateLenNext] = flags;
+        updateLenNext ++;
     }
 
     /**
@@ -315,6 +388,7 @@ class Theme
         if (Utils.eq(component.componentType, Label.TYPE))              unknownStyleLabel(untyped component);
         else if (Utils.eq(component.componentType, Button.TYPE))        unknownStyleButton(untyped component);
         else if (Utils.eq(component.componentType, ScrollBar.TYPE))     unknownStyleScrollBar(untyped component);
+        else if (Utils.eq(component.componentType, Scroller.TYPE))      unknownStyleScroller(untyped component);
         else {
             var bg = new Graphics();
             bg.beginFill(COLOR_GRAY_DARK);
@@ -405,6 +479,26 @@ class Theme
     }
 
     /**
+     * Дефолтное оформление `Scroller`.
+     * Используется для подкраски компонентов, стиль которых не задан.
+     * @param scroller Скроллер.
+     */
+    public function unknownStyleScroller(sc:Scroller):Void {
+        if (Utils.eq(sc.skinBg, null)) {
+            var bg = new Graphics();
+            bg.interactive = true;
+            bg.beginFill(COLOR_GRAY_DARK);
+            bg.drawRect(0, 0, 10, 10);
+            sc.skinBg = bg;
+        };
+
+        if (Utils.eq(sc.w, 0))
+            sc.w = 150;
+        if (Utils.eq(sc.h, 0))
+            sc.h = 150;
+    }
+
+    /**
      * Получить строковой ключ для поиска стиля.
      * Ключ формируется очень просто, для удобства это сделано в одном месте.
      * 
@@ -426,9 +520,12 @@ class Theme
         styles = null;
         application = null;
         updateItems = null;
+        updateItemsNext = null;
+        updateItemsFlagsNext = null;
         onUpdateStart = null;
         onUpdateEnd = null;
         updateLen = 0;
+        updateLenNext = 0;
         updateCount = 0;
     }
 

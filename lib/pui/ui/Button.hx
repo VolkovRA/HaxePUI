@@ -1,8 +1,8 @@
-package pui;
+package pui.ui;
 
 import js.Browser;
-import pui.Component;
-import pui.Mouse;
+import pui.ui.Component;
+import pui.dom.PointerType;
 import pixi.core.display.Container;
 import pixi.core.display.DisplayObject;
 import pixi.interaction.InteractionEvent;
@@ -65,7 +65,7 @@ class Button extends Component
     ///////////////////
 
     private function onRollOver(e:InteractionEvent):Void {
-        if (!enabled || (isPrimary && !e.data.isPrimary))
+        if (!enabled || (inputPrimary && !e.data.isPrimary))
             return;
 
         if (downCurrentButton)
@@ -74,7 +74,7 @@ class Button extends Component
             state = ButtonState.HOVER;
     }
     private function onRollOut(e:InteractionEvent):Void {
-        if (!enabled || (isPrimary && !e.data.isPrimary))
+        if (!enabled || (inputPrimary && !e.data.isPrimary))
             return;
 
         state = ButtonState.NORMAL;
@@ -91,9 +91,9 @@ class Button extends Component
     }
     private function onDown(e:InteractionEvent):Void {
         trace(e.data.isPrimary, e.data.button, e.data.buttons);
-        if (!enabled || (isPrimary && !e.data.isPrimary))
+        if (!enabled || (inputPrimary && !e.data.isPrimary))
             return;
-        if (Utils.eq(e.data.pointerType, "mouse") && mouseInput != null && mouseInput.length != 0 && mouseInput.indexOf(e.data.button) == -1)
+        if (Utils.eq(e.data.pointerType, PointerType.MOUSE) && inputMouse != null && inputMouse.length != 0 && inputMouse.indexOf(e.data.button) == -1)
             return;
 
         downCurrentButton = true;
@@ -143,9 +143,9 @@ class Button extends Component
         emit(UIEvent.PRESS, this);
     }
     private function onUp(e:InteractionEvent):Void {
-        if (!enabled || (isPrimary && !e.data.isPrimary))
+        if (!enabled || (inputPrimary && !e.data.isPrimary))
             return;trace(1);
-        if (Utils.eq(e.data.pointerType, "mouse") && mouseInput != null && mouseInput.length != 0 && mouseInput.indexOf(e.data.button) == -1)
+        if (Utils.eq(e.data.pointerType, PointerType.MOUSE) && inputMouse != null && inputMouse.length != 0 && inputMouse.indexOf(e.data.button) == -1)
             return;trace(2);
         
         downCurrentButton = false;
@@ -164,7 +164,7 @@ class Button extends Component
         emit(UIEvent.CLICK, this);
     }
     private function onUpOutside(e:InteractionEvent):Void {
-        if (!enabled || (isPrimary && !e.data.isPrimary))
+        if (!enabled || (inputPrimary && !e.data.isPrimary))
             return;
 
         downCurrentButton = false;
@@ -188,9 +188,18 @@ class Button extends Component
     //////////////////
 
     override function set_enabled(value:Bool):Bool {
-        if (!value) {
+        if (Utils.eq(value, enabled))
+            return value;
+        
+        if (value) {
+            buttonMode = true;
+            interactive = true;
+        }
+        else {
             state = ButtonState.NORMAL;
             downCurrentButton = false;
+            buttonMode = false;
+            interactive = false;
         }
 
         return super.set_enabled(value);
@@ -219,28 +228,6 @@ class Button extends Component
         delay: 250,
         interval: 20,
     }
-
-    /**
-     * Использовать только основное устройство ввода.
-     * 
-     * Основное устройство - это мышь, первое касание на сенсорном устройстве или т.п.
-     * - Если `true` - Кнопка будет реагировать только на ввод с основного устройства.
-     * - Если `false` - Кнопка будет реагировать на ввод с любого устройства.
-     * 
-     * По умолчанию: `true`
-     * 
-     * @see PointerEvent.isPrimary: https://developer.mozilla.org/en-US/docs/Web/API/PointerEvent/isPrimary
-     */
-    public var isPrimary:Bool = true;
-
-    /**
-     * Клавишы реагирования.
-     * Позволяет установить, на какие кнопки мыши будет реагировать кнопка.
-     * - Если `null` или пустой массив - Кнопка реагирует на любые клавишы.
-     * 
-     * По умолчанию: `[Mouse.MAIN]` (Только главная кнопка мыши)
-     */
-    public var mouseInput:Array<MouseKey> = [Mouse.MAIN];
 
     /**
      * Текст на кнопке.

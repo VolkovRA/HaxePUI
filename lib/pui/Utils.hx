@@ -172,7 +172,7 @@ class Utils
     }
 
     /**
-     * Получить время, прошедшее с момента запуска скрипта. (mc)
+     * Получить время, прошедшее с момента запуска приложения. (mc)
      * @see https://developer.mozilla.org/en-US/docs/Web/API/Performance/now
      */
     public static inline function uptime():Float {
