@@ -13,11 +13,9 @@ import haxe.extern.EitherType;
 /**
  * Полоса прокрутки.
  * 
- * События:
- * - `Event.CHANGE`             Диспетчерезируется при изменении значения: `ScrollBar.value`.
- * - `ComponentEvent.UPDATE`    Обновление компонента. (Перерисовка)
- * - `WheelEvent.WHEEL`         Промотка колёсиком мыши. Это событие необходимо включить: `Component.inputWheel`.
- * - *А также все базовые события pixijs: https://pixijs.download/dev/docs/PIXI.Container.html*
+ * @event Event.CHANGE              Диспетчерезируется при изменении значения: `ScrollBar.value`.
+ * @event ComponentEvent.UPDATE     Обновление компонента. (Перерисовка)
+ * @event WheelEvent.WHEEL          Промотка колёсиком мыши. Это событие необходимо включить: `Component.inputWheel`.
  */
 class ScrollBar extends Component
 {

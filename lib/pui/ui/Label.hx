@@ -16,10 +16,8 @@ import haxe.extern.EitherType;
  * 
  * *пс. На данный момент поддержка растрового шрифта не проверена полностью.*
  * 
- * События:
- * - `ComponentEvent.UPDATE`    Обновление компонента. (Перерисовка)
- * - `WheelEvent.WHEEL`         Промотка колёсиком мыши. Это событие необходимо включить: `Component.inputWheel`.
- * - *А также все базовые события pixijs: https://pixijs.download/dev/docs/PIXI.Container.html*
+ * @event ComponentEvent.UPDATE     Обновление компонента. (Перерисовка)
+ * @event WheelEvent.WHEEL          Промотка колёсиком мыши. Это событие необходимо включить: `Component.inputWheel`.
  */
 class Label extends Component
 {

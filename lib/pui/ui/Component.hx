@@ -15,10 +15,8 @@ import pixi.core.graphics.Graphics;
  * Содержит встроенную систему для накопления изменений и фактического
  * обновления перед началом цикла рендера. (Смотрите свойство: `changes`)
  * 
- * События:
- * - `ComponentEvent.UPDATE`    Обновление компонента. (Перерисовка)
- * - `WheelEvent.WHEEL`         Промотка колёсиком мыши. Это событие необходимо включить: `Component.inputWheel`.
- * - *А также все базовые события pixijs: https://pixijs.download/dev/docs/PIXI.Container.html*
+ * @event ComponentEvent.UPDATE     Обновление компонента. (Перерисовка)
+ * @event WheelEvent.WHEEL          Промотка колёсиком мыши. Это событие необходимо включить: `Component.inputWheel`.
  */
 class Component extends Container
 {

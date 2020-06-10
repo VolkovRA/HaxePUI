@@ -14,14 +14,12 @@ import haxe.extern.EitherType;
  * Кнопка.
  * Может содержать текст и/или картинку.
  * 
- * События:
- * - `Event.PRESS`              Нажатие на кнопку. Это событие не диспетчерезируется, если кнопка была выключена: `enabled=false`.
- * - `Event.CLICK`              Клик по кнопке. Не путайте с событиями PixiJS. Это событие не диспетчерезируется, если кнопка была выключена: `enabled=false`.
- * - `Event.DOUBLE_CLICK`       Двойной клик по кнопке. Необходимо отдельно включить в настройках кнопки: `Button.dblClick.enabled = true`.
- * - `Event.STATE`              Состояние кнопки изменено.
- * - `ComponentEvent.UPDATE`    Обновление компонента. (Перерисовка)
- * - `WheelEvent.WHEEL`         Промотка колёсиком мыши. Это событие необходимо включить: `Component.inputWheel`.
- * - *А также все базовые события pixijs: https://pixijs.download/dev/docs/PIXI.Container.html*
+ * @event Event.PRESS               Нажатие на кнопку. Это событие не диспетчерезируется, если кнопка была выключена: `enabled=false`.
+ * @event Event.CLICK               Клик по кнопке. Не путайте с событиями PixiJS. Это событие не диспетчерезируется, если кнопка была выключена: `enabled=false`.
+ * @event Event.DOUBLE_CLICK        Двойной клик по кнопке. Необходимо отдельно включить в настройках кнопки: `Button.dblClick.enabled = true`.
+ * @event Event.STATE               Состояние кнопки изменено.
+ * @event ComponentEvent.UPDATE     Обновление компонента. (Перерисовка)
+ * @event WheelEvent.WHEEL          Промотка колёсиком мыши. Это событие необходимо включить: `Component.inputWheel`.
  */
 class Button extends Component
 {
