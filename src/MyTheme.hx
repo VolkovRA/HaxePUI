@@ -14,6 +14,10 @@ class MyTheme extends Theme
 {
     public function new(app:Application) {
         super(app);
+
+        addStyle(Label.TYPE, "orange", setLabelOrange);
+        addStyle(Label.TYPE, "pink", setLabelPink);
+        addStyle(Label.TYPE, "h1", setLabelH1);
     }
 
 
@@ -22,18 +26,29 @@ class MyTheme extends Theme
     //   ТЕКСТОВЫЕ СТИЛИ   //
     /////////////////////////
 
-    // Тёмная, текстовая метка на фоне дерева.
-    private var tsLabelTitle = new TextStyle({
-        fontSize: 22.5,
-        fill: 0x7d3219,
+    private var textStyleOrange = new TextStyle({
+        fontSize: 40,
+        fill: 0xf68712,
         fontFamily: "Verdana",
-        wordWrap: true,
+        fontStyle: "bold",
         dropShadow: true,
-        dropShadowColor: 0xfdc08e,
-        dropShadowAlpha: 0.26,
+        dropShadowColor: 0xf1471d,
+        dropShadowAlpha: 1,
         dropShadowAngle: Utils.degToRad(90),
         dropShadowDistance: 1,
         dropShadowBlur: 0
+    });
+    private var textStylePink = new TextStyle({
+        fontSize: 30,
+        fill: 0xea1e63,
+        fontFamily: "Verdana",
+        fontStyle: "italic",
+    });
+    private var textStyleH1 = new TextStyle({
+        fontSize: 40,
+        fill: 0xffffff,
+        fontFamily: "Verdana",
+        fontStyle: "bold",
     });
 
 
@@ -42,8 +57,16 @@ class MyTheme extends Theme
     //   СТИЛИЗАЦИЯ   //
     ////////////////////
 
-    private function setLabelTitle(label:Label):Void {
+    private function setLabelOrange(label:Label):Void {
         label.skinText = new Text(label.text);
-        label.skinText.style = tsLabelTitle;
+        label.skinText.style = textStyleOrange;
+    }
+    private function setLabelPink(label:Label):Void {
+        label.skinText = new Text(label.text);
+        label.skinText.style = textStylePink;
+    }
+    private function setLabelH1(label:Label):Void {
+        label.skinText = new Text(label.text);
+        label.skinText.style = textStyleH1;
     }
 }
