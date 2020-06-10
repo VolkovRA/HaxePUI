@@ -17,7 +17,8 @@ import haxe.extern.EitherType;
  * *пс. На данный момент поддержка растрового шрифта не проверена полностью.*
  * 
  * События:
- * - `ComponentEvent.UPDATE` Обновление компонента. (Перерисовка)
+ * - `ComponentEvent.UPDATE`    Обновление компонента. (Перерисовка)
+ * - `WheelEvent.WHEEL`         Промотка колёсиком мыши. Это событие необходимо включить: `Component.inputWheel`.
  * - *А также все базовые события pixijs: https://pixijs.download/dev/docs/PIXI.Container.html*
  */
 class Label extends Component
@@ -282,7 +283,7 @@ class Label extends Component
      */
     @:keep
     override public function toString():String {
-        return Syntax.code( '"[" + {0}.componentType + " style=\\"" + {0}.style + "\\" text=\\"" + ({0}.text.length>50?({0}.text.substring(0,50)+"..."):{0}.text) +  "\\"]"', this);
+        return Syntax.code( '"[" + {0}.componentType + {0}.componentID + " style=\\"" + {0}.style + "\\" text=\\"" + ({0}.text.length>50?({0}.text.substring(0,50)+"..."):{0}.text) +  "\\"]"', this);
     }
 
 

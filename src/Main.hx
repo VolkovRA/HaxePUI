@@ -103,6 +103,16 @@ class Main
         addCircles(sc.content);
         //addBox(sc.content);
         app.stage.addChild(sc);
+
+        var sc2 = new Scroller();
+        sc2.w = 100;
+        sc2.h = 100;
+        //sc2.visible = false;
+        //sc2.overflowX = Overflow.SCROLL;
+        //sc2.overflowY = Overflow.SCROLL;
+        //sc2.debug = true;
+        addBox(sc2.content);
+        sc.content.addChild(sc2);
     }
 
     static private function onThemeUpdateFinish(e:ThemeEvent):Void {

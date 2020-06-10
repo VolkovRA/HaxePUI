@@ -20,6 +20,7 @@ import haxe.extern.EitherType;
  * - `Event.DOUBLE_CLICK`       Двойной клик по кнопке. Необходимо отдельно включить в настройках кнопки: `Button.dblClick.enabled = true`.
  * - `Event.STATE`              Состояние кнопки изменено.
  * - `ComponentEvent.UPDATE`    Обновление компонента. (Перерисовка)
+ * - `WheelEvent.WHEEL`         Промотка колёсиком мыши. Это событие необходимо включить: `Component.inputWheel`.
  * - *А также все базовые события pixijs: https://pixijs.download/dev/docs/PIXI.Container.html*
  */
 class Button extends Component
@@ -96,6 +97,8 @@ class Button extends Component
             return;
         if (Utils.eq(e.data.pointerType, PointerType.MOUSE) && inputMouse != null && inputMouse.length != 0 && inputMouse.indexOf(e.data.button) == -1)
             return;
+
+        e.stopPropagation();
 
         downCurrentButton = true;
         state = ButtonState.PRESS;

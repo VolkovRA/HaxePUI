@@ -16,7 +16,8 @@ import pixi.core.graphics.Graphics;
  * обновления перед началом цикла рендера. (Смотрите свойство: `changes`)
  * 
  * События:
- * - `ComponentEvent.UPDATE` Обновление компонента. (Перерисовка)
+ * - `ComponentEvent.UPDATE`    Обновление компонента. (Перерисовка)
+ * - `WheelEvent.WHEEL`         Промотка колёсиком мыши. Это событие необходимо включить: `Component.inputWheel`.
  * - *А также все базовые события pixijs: https://pixijs.download/dev/docs/PIXI.Container.html*
  */
 class Component extends Container
@@ -234,6 +235,11 @@ class Component extends Container
         if (Utils.eq(value, theme))
             return value;
 
+        if (inputWheel) {
+            theme.removeWheelListener(this);
+            value.addWheelListener(this);
+        }
+
         theme = value;
         isInit = false;
         themeRenderFrame = 0;
@@ -404,6 +410,36 @@ class Component extends Container
      * По умолчанию: `[Mouse.MAIN]` (Только главная кнопка мыши)
      */
     public var inputMouse:Array<MouseKey> = [Mouse.MAIN];
+
+    /**
+     * Ввод колёсиком мыши.
+     * 
+     * Позволяет подключить компонент к получению событий колёсика мыши: `pui.events.WheelEvent`.
+     * Если задать `true`, компонент будет добавлен в список получателей данного события.
+     * 
+     * Условия для получения события:
+     * 1. Свойство `inputWheel` задано в `true`.
+     * 2. Свойство `enabled` задано в `true`.
+     * 3. Курсор мыши находится в области компонента: `x`, `y`, `w`, `h`.
+     * 4. Компонент находится на сцене. (Он или один из родителей находится на корневом stage)
+     * 5. Более глубокие компоненты, получившие это событие не отменили его всплытие. (См.: `WheelEvent.bubbling`)
+     * 
+     * По умолчанию: `false` (Выключено) 
+     */
+    public var inputWheel(default, set):Bool = false;
+    function set_inputWheel(value:Bool):Bool {
+        if (Utils.eq(value, inputWheel))
+            return value;
+
+        if (value)
+            theme.addWheelListener(this);
+        else
+            theme.removeWheelListener(this);
+
+        inputWheel = value;
+
+        return value;
+    }
 
     /**
      * Скин заднего фона.
@@ -678,7 +714,7 @@ class Component extends Container
      */
     @:keep
     public function toString():String {
-        return '[' + componentType + ' style="' + style + '"]';
+        return '[' + componentType + componentID + ' style="' + style + '"]';
     }
 
 	/**
@@ -703,6 +739,9 @@ class Component extends Container
             skinDebug.destroy();
             Utils.delete(skinDebug);
         }
+
+        if (inputWheel)
+            theme.removeWheelListener(this);
 
         Utils.delete(changes);
         Utils.delete(theme);

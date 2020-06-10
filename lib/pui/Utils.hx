@@ -261,6 +261,37 @@ class Utils
     }
 
     /**
+     * Получить глубину вложенности ребёнка в корне.
+     * - Возвращает **глубину вложенности**, если ребёнок содержится в корне или одном из его потомков.
+     * - Возвращает `0`, если ребёнок является корнем.
+     * - Возвращает `-1`, если ребёнок или корень равны `null`.
+     * - Возвращает `-1`, если любой из узлов имеет `visible=false`. (Только при переданном флаге `visible`)
+     * @param child Ребёнок.
+     * @param root Корень.
+     * @param visible Учитывать отображение. Если `true` - будет проверяться и возможность отображения ребёнка.
+     * @param depth Начальный уровень вложенности.
+     * @return Возвращает глубину вложенности указанного экранного объекта.
+     */
+    public static function getDepth(child:DisplayObject, root:Container, visible:Bool = false, depth:Int = 0):Int {
+        if (child == null || root == null)
+            return -1;
+        
+        while (depth < 1000) {
+            if (visible && !child.visible)
+                return -1;
+            if (Utils.eq(child, root))
+                return depth;
+            if (child.parent == null)
+                return -1;
+
+            child = child.parent;
+            depth ++;
+        }
+
+        return 1000;
+    }
+
+    /**
      * Нарисовать рамку.
      * @param holst Цель вывода.
      * @param x Позиция вывода по X.

@@ -3,6 +3,7 @@ package pui.ui;
 import pui.dom.PointerType;
 import pui.events.Event;
 import pui.events.DragEvent;
+import pui.events.WheelEvent;
 import pui.geom.Vec2;
 import pui.ui.Component;
 import pui.pixi.PixiEvent;
@@ -31,6 +32,7 @@ import haxe.extern.EitherType;
  * - `DragEvent.MOVE`           Перетаскивание контента пользователем.
  * - `DragEvent.OVERDRAG`       Перетаскивание контента пользователем за пределы доступной зоны.
  * - `ComponentEvent.UPDATE`    Обновление компонента. (Перерисовка)
+ * - `WheelEvent.WHEEL`         Промотка колёсиком мыши. Это событие изначально включено.
  * - *А также все базовые события pixijs: https://pixijs.download/dev/docs/PIXI.Container.html*
  */
 class Scroller extends Component
@@ -56,6 +58,8 @@ class Scroller extends Component
     private var dragY:Float = 0;
     private var dragContentX:Float = 0;
     private var dragContentY:Float = 0;
+    private var wheelScrollX:Float = 0;
+    private var wheelScrollY:Float = 0;
     private var inputs:Array<InputData> = new Array();
 
     /**
@@ -63,6 +67,9 @@ class Scroller extends Component
      */
     public function new() {
         super(TYPE);
+
+        inputWheel = true;
+        on(WheelEvent.WHEEL, onWheel);
 
         contentMask = new Graphics();
         contentMask.beginFill(0xff0000);
@@ -120,7 +127,9 @@ class Scroller extends Component
             return;
         if (Utils.eq(e.data.pointerType, PointerType.MOUSE) && inputMouse != null && inputMouse.length != 0 && inputMouse.indexOf(e.data.button) == -1)
             return;
-        
+
+        e.stopPropagation();
+
         // Перетаскивание контента:
         if (dragParams.enabled) {
             content.on(PixiEvent.POINTER_MOVE, onContentMove);
@@ -237,6 +246,23 @@ class Scroller extends Component
             emit(DragEvent.STOP, e);
             DragEvent.store(e);
         }
+    }
+
+    private function onWheel(e:WheelEvent):Void {
+        e.native.preventDefault();
+        e.bubbling = false;
+
+        if (e.native.deltaX > 0)
+            wheelScrollX += wheelScrollDist;
+        else if (e.native.deltaX < 0)
+            wheelScrollX -= wheelScrollDist;
+
+        if (e.native.deltaY > 0)
+            wheelScrollY -= wheelScrollDist;
+        else if (e.native.deltaY < 0)
+            wheelScrollY += wheelScrollDist;
+
+        update(false, Component.UPDATE_SIZE);
     }
 
 
@@ -374,6 +400,12 @@ class Scroller extends Component
     public var scrollV(default, null):ScrollBar;
 
     /**
+     * Дистанция смещения контента при прокрутке колёсиком мыши. (px)
+     * По умолчанию: `100`
+     */
+    public var wheelScrollDist:Float = 100;
+
+    /**
      * Параметры управления свапом. (Перетаскивание пальцем/курсором)
      * Не может быть `null`
      */
@@ -402,6 +434,8 @@ class Scroller extends Component
         speedMin: 3,
         speedDmp: 0.75
     }
+
+    //public var wheel
 
     /**
      * Режим отображения содержимого по оси X.
@@ -534,9 +568,10 @@ class Scroller extends Component
         // Порт вывода:
         var outW = sv?Math.max(0,sc.w-sc.scrollV.w):sc.w;
         var outH = sh?Math.max(0,sc.h-sc.scrollH.h):sc.h;
+        var minX = b.width > outW?(-b.x-(b.width-outW)):-b.x;
+        var minY = b.height > outH?(-b.y-(b.height-outH)):-b.y;
 
         // Ограничение позиции контента:
-        var v:Float = 0;
         if (sc.isDragging) {
             sc.velocity.speed.set(0, 0);
             
@@ -546,7 +581,6 @@ class Scroller extends Component
                 evDrag = DragEvent.get(DragEvent.MOVE, sc);
 
             // Избыточное натяжение по X:
-            v = b.width > outW?(-b.x-(b.width-outW)):-b.x; // <-- content minX
             if (sc.dragContentX > -b.x) {
                 if (sc.dragParams.overdrag.enabled) {
                     if (Utils.eq(evDragOver, null))
@@ -560,14 +594,14 @@ class Scroller extends Component
                     Utils.set(sc.contentX, sc.dragContentX);
                 }
             }
-            else if (sc.dragContentX < v) {
+            else if (sc.dragContentX < minX) {
                 if (sc.dragParams.overdrag.enabled) {
                     if (Utils.eq(evDragOver, null))
                         evDragOver = DragEvent.get(DragEvent.OVERDRAG, sc);
-                    evDragOver.overdragX = v - sc.dragContentX;
+                    evDragOver.overdragX = minX - sc.dragContentX;
                     
-                    var p = Utils.eq(outW,0)?0:(Math.min(outW, v - sc.dragContentX)/outW);
-                    Utils.set(sc.contentX, v - outW * OVERDRAG(p, sc.dragParams.overdrag.distMax));
+                    var p = Utils.eq(outW,0)?0:(Math.min(outW, minX - sc.dragContentX)/outW);
+                    Utils.set(sc.contentX, minX - outW * OVERDRAG(p, sc.dragParams.overdrag.distMax));
                 }
                 else {
                     Utils.set(sc.contentX, sc.dragContentX);
@@ -578,7 +612,6 @@ class Scroller extends Component
             }
 
             // Избыточное натяжение по Y:
-            v = b.height > outH?(-b.y-(b.height-outH)):-b.y; // <-- content minY
             if (sc.dragContentY > -b.y) {
                 if (sc.dragParams.overdrag.enabled) {
                     if (Utils.eq(evDragOver, null))
@@ -592,14 +625,14 @@ class Scroller extends Component
                     Utils.set(sc.contentY, sc.dragContentY);
                 }
             }
-            else if (sc.dragContentY < v) {
+            else if (sc.dragContentY < minY) {
                 if (sc.dragParams.overdrag.enabled) {
                     if (Utils.eq(evDragOver, null))
                         evDragOver = DragEvent.get(DragEvent.OVERDRAG, sc);
-                    evDragOver.overdragY = v - sc.dragContentY;
+                    evDragOver.overdragY = minY - sc.dragContentY;
 
-                    var p = Utils.eq(outH,0)?0:(Math.min(outH, v - sc.dragContentY)/outH);
-                    Utils.set(sc.contentY, v - outH * OVERDRAG(p, sc.dragParams.overdrag.distMax));
+                    var p = Utils.eq(outH,0)?0:(Math.min(outH, minY - sc.dragContentY)/outH);
+                    Utils.set(sc.contentY, minY - outH * OVERDRAG(p, sc.dragParams.overdrag.distMax));
                 }
                 else {
                     Utils.set(sc.contentY, sc.dragContentY);
@@ -621,6 +654,38 @@ class Scroller extends Component
                 sc.velocity.speed.y = 0;
                 Utils.set(sc.contentY, -b.y - Math.max(0, b.height - outH) * sc.scrollSetY);
             }
+            
+            // Промотка списка колёсиком мыши по X:
+            if (sc.wheelScrollX > 0) {
+                sc.velocity.speed.x = 0;
+
+                Utils.set(sc.contentX, sc.contentX + sc.wheelScrollX);
+                if (sc.contentX > -b.x)
+                    Utils.set(sc.contentX, -b.x);
+            }
+            else if (sc.wheelScrollX < 0) {
+                sc.velocity.speed.x = 0;
+
+                Utils.set(sc.contentX, sc.contentX + sc.wheelScrollX);
+                if (sc.contentX < minX)
+                    Utils.set(sc.contentX, minX);
+            }
+
+            // Промотка списка колёсиком мыши по Y:
+            if (sc.wheelScrollY > 0) {
+                sc.velocity.speed.y = 0;
+
+                Utils.set(sc.contentY, sc.contentY + sc.wheelScrollY);
+                if (sc.contentY > -b.y)
+                    Utils.set(sc.contentY, -b.y);
+            }
+            else if (sc.wheelScrollY < 0) {
+                sc.velocity.speed.y = 0;
+
+                Utils.set(sc.contentY, sc.contentY + sc.wheelScrollY);
+                if (sc.contentY < minY)
+                    Utils.set(sc.contentY, minY);
+            }
 
             // Скорость движения контента:
             if (sc.velocity.enabled && (Utils.noeq(sc.velocity.speed.x, 0) || Utils.noeq(sc.velocity.speed.y, 0))) {
@@ -640,93 +705,93 @@ class Scroller extends Component
             }
             
             // Ограничение области перемещения контента по X:
-            v = b.width > outW?(-b.x-(b.width-outW)):-b.x; // <-- content minX
             if (sc.contentX > -b.x) {
                 if (sc.velocity.speed.x > 0) {
                     sc.velocity.speed.x = 0;
-                    sc.contentX = -b.x;
+                    Utils.set(sc.contentX, -b.x);
                 }
                 else {
                     var dist = -b.x - sc.contentX;
                     if (dist < -1) { // <-- Минимальная дистанция для анимации возврата: 1px.
-                        sc.contentX += sc.contentBackSpeed * sc.theme.dt * dist;
+                        Utils.set(sc.contentX, sc.contentX + sc.contentBackSpeed * sc.theme.dt * dist);
                         if (sc.contentX <= -b.x)
-                            sc.contentX = -b.x;
+                            Utils.set(sc.contentX, -b.x);
                         else
                             needUPD = true;
                     }
                     else {
-                        sc.contentX = -b.x;
+                        Utils.set(sc.contentX, -b.x);
                     }
                 }
             }
-            else if (sc.contentX < v) {
+            else if (sc.contentX < minX) {
                 if (sc.velocity.speed.x < 0) {
                     sc.velocity.speed.x = 0;
-                    sc.contentX = v;
+                    Utils.set(sc.contentX, minX);
                 }
                 else {
                     sc.velocity.speed.x = 0;
                     
-                    var dist = v - sc.contentX;
+                    var dist = minX - sc.contentX;
                     if (dist > 1) { // <-- Минимальная дистанция для анимации возврата: 1px.
-                        sc.contentX += sc.contentBackSpeed * sc.theme.dt * dist;
-                        if (sc.contentX >= v)
-                            sc.contentX = v;
+                        Utils.set(sc.contentX, sc.contentX + sc.contentBackSpeed * sc.theme.dt * dist);
+                        if (sc.contentX >= minX)
+                            Utils.set(sc.contentX, minX);
                         else
                             needUPD = true;
                     }
                     else {
-                        sc.contentX = v;
+                        Utils.set(sc.contentX, minX);
                     }
                 }
             }
 
             // Ограничение области перемещения контента по Y:
-            v = b.height > outH?(-b.y-(b.height-outH)):-b.y; // <-- content minY
             if (sc.contentY > -b.y) {
                 if (sc.velocity.speed.y > 0) {
                     sc.velocity.speed.y = 0;
-                    sc.contentY = -b.y;
+                    Utils.set(sc.contentY, -b.y);
                 }
                 else {
                     var dist = -b.y - sc.contentY;
                     if (dist < -1) { // <-- Минимальная дистанция для анимации возврата: 1px.
-                        sc.contentY += sc.contentBackSpeed * sc.theme.dt * dist;
+                        Utils.set(sc.contentY, sc.contentY + sc.contentBackSpeed * sc.theme.dt * dist);
                         if (sc.contentY <= -b.y)
-                            sc.contentY = -b.y;
+                            Utils.set(sc.contentY, -b.y);
                         else
                             needUPD = true;
                     }
                     else {
-                        sc.contentY = -b.y;
+                        Utils.set(sc.contentY, -b.y);
                     }
                 }
             }
-            else if (sc.contentY < v) {
+            else if (sc.contentY < minY) {
                 if (sc.velocity.speed.y < 0) {
                     sc.velocity.speed.y = 0;
-                    sc.contentY = v;
+                    Utils.set(sc.contentY, minY);
                 }
                 else {
                     sc.velocity.speed.y = 0;
                     
-                    var dist = v - sc.contentY;
+                    var dist = minY - sc.contentY;
                     if (dist > 1) { // <-- Минимальная дистанция для анимации возврата: 1px.
-                        sc.contentY += sc.contentBackSpeed * sc.theme.dt * dist;
-                        if (sc.contentY >= v)
-                            sc.contentY = v;
+                        Utils.set(sc.contentY, sc.contentY + sc.contentBackSpeed * sc.theme.dt * dist);
+                        if (sc.contentY >= minY)
+                            Utils.set(sc.contentY, minY);
                         else
                             needUPD = true;
                     }
                     else {
-                        sc.contentY = v;
+                        Utils.set(sc.contentY,  minY);
                     }
                 }
             }
         }
         sc.scrollSetX = -1;
         sc.scrollSetY = -1;
+        sc.wheelScrollX = 0;
+        sc.wheelScrollY = 0;
 
         // Позицианирование:
         sc.content.x = Math.round(sc.contentX);
@@ -739,7 +804,7 @@ class Scroller extends Component
         // Ползунки:
         sc.scrollIgnore = true;
         if (sh) {
-            v = b.width - outW;
+            var v = b.width - outW;
             sc.scrollH.w = outW;
             sc.scrollH.y = outH;
             sc.scrollH.value = v>0?(-(sc.contentX + b.x) / v):0;
@@ -753,7 +818,7 @@ class Scroller extends Component
         }
 
         if (sv) {
-            v = b.height - outH;
+            var v = b.height - outH;
             sc.scrollV.h = outH;
             sc.scrollV.x = outW;
             sc.scrollV.value = v>0?(-(sc.contentY + b.y) / v):0;

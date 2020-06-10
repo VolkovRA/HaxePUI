@@ -16,6 +16,7 @@ import haxe.extern.EitherType;
  * События:
  * - `Event.CHANGE`             Диспетчерезируется при изменении значения: `ScrollBar.value`.
  * - `ComponentEvent.UPDATE`    Обновление компонента. (Перерисовка)
+ * - `WheelEvent.WHEEL`         Промотка колёсиком мыши. Это событие необходимо включить: `Component.inputWheel`.
  * - *А также все базовые события pixijs: https://pixijs.download/dev/docs/PIXI.Container.html*
  */
 class ScrollBar extends Component
@@ -64,6 +65,8 @@ class ScrollBar extends Component
         if (Utils.eq(e.data.pointerType, PointerType.MOUSE) && inputMouse != null && inputMouse.length != 0 && inputMouse.indexOf(e.data.button) == -1)
             return;
         
+        e.stopPropagation();
+
         thumb.on(PixiEvent.POINTER_MOVE, onThumbMove);
         isDragging = true;
 
@@ -190,6 +193,8 @@ class ScrollBar extends Component
             return;
         if (Utils.eq(e.data.pointerType, PointerType.MOUSE) && inputMouse != null && inputMouse.length != 0 && inputMouse.indexOf(e.data.button) == -1)
             return;
+        
+        e.stopPropagation();
 
         skinScroll.on(PixiEvent.POINTER_MOVE, onBgMove);
         onBgMove(e);

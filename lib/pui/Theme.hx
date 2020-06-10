@@ -1,6 +1,7 @@
 package pui;
 
 import js.Browser;
+import js.Syntax;
 import haxe.DynamicAccess;
 import pui.ui.Button;
 import pui.ui.Label;
@@ -8,9 +9,11 @@ import pui.ui.Component;
 import pui.ui.ScrollBar;
 import pui.ui.Scroller;
 import pui.pixi.PixiEvent;
+import pui.events.WheelEvent;
 import pui.events.ThemeEvent;
 import pixi.core.Application;
 import pixi.core.graphics.Graphics;
+import pixi.core.math.Point;
 import pixi.core.text.Text;
 import pixi.interaction.EventEmitter;
 
@@ -45,6 +48,7 @@ class Theme extends EventEmitter
     static private inline var COLOR_GRAY_DARK:Int = 0x212121;
     static private inline var COLOR_GRAY:Int = 0x303030;
     static private inline var COLOR_GRAY_BRIGHT:Int = 0x424242;
+    static private var POINT:Point = new Point();
     static private var errors:DynamicAccess<Bool> = {};
 
     /**
@@ -60,6 +64,7 @@ class Theme extends EventEmitter
 
         // События:
         application.renderer.on(PixiEvent.PRE_RENDER, onUpdateUI);
+        application.renderer.view.addEventListener("wheel", onWheel);
     }    
 
 
@@ -189,15 +194,149 @@ class Theme extends EventEmitter
      */
     private var timeUPD:Float = Utils.uptime() / 1000;
 
+    /**
+     * Список слушателей событий колёсика мыши: `ComponentID`->`Component`.
+     */
+    @:noDoc
+    @:noCompletion
+    private var wheelListeners:Dynamic = {};
+
+
 
     ////////////////
     //   МЕТОДЫ   //
     ////////////////
 
     /**
+     * Добавить компонент в список слушателей событий колёсика мыши.
+     * @param component Компонент.
+     */
+    @:allow(pui.ui.Component) 
+    @:noDoc
+    @:noCompletion
+    private function addWheelListener(component:Component):Void {
+        wheelListeners[component.componentID] = component;
+    }
+
+    /**
+     * Удалить компонент из списка слушателей колёсика мыши.
+     * @param component Компонент.
+     */
+    @:allow(pui.ui.Component) 
+    @:noDoc
+    @:noCompletion
+    private function removeWheelListener(component:Component):Void {
+        Utils.delete(wheelListeners[component.componentID]);
+    }
+
+    /**
+     * Обработка события скролла колёсиком мыши.
+     * @param e Событие скрола.
+     */
+    private function onWheel(e:js.html.WheelEvent):Void {
+
+        // Обработка слушателей колёсика мыши.
+        // Координаты:
+        application.renderer.plugins.interaction.mapPositionToPoint(POINT, e.x, e.y);
+        var x = POINT.x;
+        var y = POINT.y;
+
+        // Получаем список активных слушателей:
+        var arr = new Array<WheelListener>();
+        var key:Int = null;
+        var item:Component = null;
+        Syntax.code("for ({0} in {1}) {", key, wheelListeners); // for in
+            item = wheelListeners[key];
+
+            // Удаление мёртвых слушателей:
+            if (Utils.noeq(item.theme, this) || !item.inputWheel) {
+                Utils.delete(wheelListeners[item.componentID]);
+                Syntax.code("continue");
+            }
+
+            // Пропуск неподходящих слушателей:
+            var depth = Utils.getDepth(item, application.stage, true);
+            if (!item.enabled || depth == -1)
+                Syntax.code("continue");
+
+            // Проверка на попадание курсора в область компонента:
+            POINT.x = x;
+            POINT.y = y;
+            item.toLocal(POINT, null, POINT);
+            if (POINT.x < 0 || POINT.x > item.w || POINT.y < 0 || POINT.y > item.h)
+                Syntax.code("continue");
+            
+            // Добавление активного слушателя:
+            arr.push({ depth:depth, item:item });
+        Syntax.code("}"); // for end
+
+        // Наличие активных слушателей:
+        var len = arr.length;
+        if (Utils.eq(len, 0))
+            return;
+        
+        // Рассылка события, начиная с самого глубокого: (Всплытие)
+        arr.sort(sortWheelItems);
+        
+        var cd = arr[len-1].depth; // current depth
+        var canceled = false;
+        while (Utils.noeq(len--, 0)) {
+            
+            // Отмена диспетчерезации предыдущим получателем события.
+            // 
+            // На одном и том же уровне глубины событие всё ещё отрабатывает,
+            // так как мы не знаем, какой из компонентов находится "выше".
+            // Такая ситуация может произойти, когда оба компонента имеют
+            // одинаковую глубину но разную цепочку родителей.
+            // 
+            // В текущей реализации используется компромисное решение для
+            // большей скорости работы, что бы не проверять всё дерево целиком,
+            // проверяется только цепочка родителей каждого из компонентов.
+            //
+            // Возможная проблема компромиса - получение события скролла двумя или
+            // более компонентами, расположенными на одном уровне вложенности и
+            // друг над другом. Для решения этого вы можете просто расставить их
+            // в стороны, изменить глубину их вложенности или просто скрыть
+            // не нужные компоненты.
+            if (canceled && arr[len].depth < cd)
+                return;
+
+            // Отправка события:
+            item = arr[len].item;
+            cd = arr[len].depth;
+
+            var we = WheelEvent.get(WheelEvent.WHEEL, item);
+            we.native = e;
+            item.emit(WheelEvent.WHEEL, we);
+
+            if (!we.bubbling)
+                canceled = true;
+            
+            WheelEvent.store(we);
+        }
+    }
+
+    /**
+     * Сортировка активных слушателей колёсика мыши.
+     */
+    @:noDoc
+    @:noCompletion
+    private function sortWheelItems(x:WheelListener, y:WheelListener):Int {
+        if (x.depth > y.depth)
+            return 1;
+        if (x.depth < y.depth)
+            return -1;
+
+        if (x.item.componentID > y.item.componentID)
+            return 1;
+        else
+            return -1;
+    }
+
+    /**
      * Обновление компонентов интерфейса.
      * 
-     * Эта функция производит обновление всех компонентов свзяанных с данной темой и у
+     * Эта функция производит обновление всех компонентов, свзязанных с данной темой и у
      * которых был вызва метод: `Component.update()`.
      */
     @:noDoc
@@ -488,12 +627,14 @@ class Theme extends EventEmitter
      */
     public function destroy():Void {
         application.renderer.off(PixiEvent.POST_RENDER, onUpdateUI);
+        application.renderer.view.removeEventListener("wheel", onWheel);
 
         styles = null;
         application = null;
         updateItems = null;
         updateItemsNext = null;
         updateItemsFlagsNext = null;
+        wheelListeners = null;
         updateLen = 0;
         updateLenNext = 0;
     }
@@ -515,4 +656,12 @@ class Theme extends EventEmitter
      * По умолчанию: `null`.
      */
     static public var current:Theme = null;
+}
+
+@:noDoc
+@:noCompletion
+private typedef WheelListener =
+{
+    var depth:Int;
+    var item:Component;
 }
