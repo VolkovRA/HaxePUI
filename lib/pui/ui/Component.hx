@@ -369,27 +369,6 @@ class Component extends Container
     }
 
     /**
-     * Внешние отступы.
-     * 
-     * Это свойство похоже на аналогичное в css, с помощью которого вы можете
-     * задать отступы этого компонента от других элементов. Не все компоненты
-     * обязательно реализуют это поведение. Для того, что бы изменения вступили
-     * в силу, вы можете переназначить объект в это свойство или вызвать метод
-     * `update()` вручную.
-     * 
-     * При установке нового значения регистрируются изменения в компоненте:
-     * - `Component.UPDATE_SIZE` - Для повторного позицианирования.
-     * 
-     * По умолчанию: `null`. (Отступы не заданы)
-     */
-    public var margin(default, set):Offset = null;
-    function set_margin(value:Offset):Offset {
-        margin = value;
-        update(false, Component.UPDATE_SIZE);
-        return value;
-    }
-
-    /**
      * Ввод только с основного устройства.
      * 
      * Основное устройство - это мышь, первое касание на сенсорном устройстве или т.п.
@@ -680,15 +659,6 @@ class Component extends Container
 
         addChild(skinDebug);
         skinDebug.clear();
-
-        // Внешний отступ:
-        if (margin != null) {
-            skinDebug.beginFill(0xff7700, 0.2);
-            skinDebug.drawRect(0, 0 - margin.top, w, margin.top);
-            skinDebug.drawRect(0, h, w, margin.bottom);
-            skinDebug.drawRect(-margin.left, 0, margin.left, h);
-            skinDebug.drawRect(w, 0, margin.right, h);
-        }
 
         // Внутренний отступ:
         if (padding != null) {
