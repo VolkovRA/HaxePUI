@@ -80,6 +80,17 @@ class WheelEvent extends Event
     }
 
     /**
+     * Послать событие.
+     * @param type Тип события.
+     * @param target Источник события.
+     */
+    static public function fire(type:String, target:EventEmitter):Void {
+        var e = get(type, target);
+        target.emit(type, e);
+        pool[poolLen++] = e;
+    }
+
+    /**
      * Пул объектов для повторного использования.
      */
     static private var pool = new Array<WheelEvent>();

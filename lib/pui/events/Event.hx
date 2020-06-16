@@ -40,6 +40,21 @@ class Event
     static public inline var DOUBLE_CLICK = "puiDoubleClick";
 
     /**
+     * Перетаскивание началось.
+     */
+    static public inline var START_DRAG = "puiStartDrag";
+
+    /**
+     * Перетаскивание завершено.
+     */
+    static public inline var STOP_DRAG = "puiStopDrag";
+
+    /**
+     * Перетаскивание.
+     */
+    static public inline var DRAG = "puiDrag";
+
+    /**
      * Создать событие.
      * @param type Тип события.
      * @param target Источник события.
@@ -93,6 +108,17 @@ class Event
      */
     static public function store(event:Event):Void {
         pool[poolLen++] = event;
+    }
+
+    /**
+     * Послать событие.
+     * @param type Тип события.
+     * @param target Источник события.
+     */
+    static public function fire(type:String, target:EventEmitter):Void {
+        var e = get(type, target);
+        target.emit(type, e);
+        pool[poolLen++] = e;
     }
 
     /**

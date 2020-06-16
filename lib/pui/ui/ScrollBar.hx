@@ -1,7 +1,6 @@
 package pui.ui;
 
 import pui.events.Event;
-import pui.dom.PointerType;
 import pui.ui.Component;
 import pui.pixi.PixiEvent;
 import pixi.core.display.Container;
@@ -13,8 +12,11 @@ import haxe.extern.EitherType;
 /**
  * Полоса прокрутки.
  * 
+ * @event Event.START_DRAG          Пользователь начал перетаскивать ползунок скроллбара.
+ * @event Event.STOP_DRAG           Пользователь закончил перетаскивать ползунок скроллбара.
+ * @event Event.DRAG                Пользователь перетащил ползунок скроллбара.
  * @event Event.CHANGE              Диспетчерезируется при изменении значения: `ScrollBar.value`.
- * @event ComponentEvent.UPDATE     Обновление компонента. (Перерисовка)
+ * @event ComponentEvent.UPDATED    Компонент обновился. (Перерисовался)
  * @event WheelEvent.WHEEL          Промотка колёсиком мыши. Это событие необходимо включить: `Component.inputWheel`.
  */
 class ScrollBar extends Component
@@ -35,9 +37,8 @@ class ScrollBar extends Component
      * Используется для повторных вычислений внутри компонента.
      */
     static private var PADDING:Offset = { top:0, left:0, right:0, bottom:0 };
-
+    
     // Приват
-    private var isDragging:Bool = false;
     private var dragX:Float = 0;
     private var dragY:Float = 0;
 
@@ -45,7 +46,9 @@ class ScrollBar extends Component
      * Создать скроллбар.
      */
     public function new() {
-        super(TYPE);
+        super();
+        
+        this.componentType = TYPE;
 
         Utils.set(this.updateLayers, ScrollBar.defaultLayers);
         Utils.set(this.updateSize, ScrollBar.defaultSize);
@@ -58,27 +61,39 @@ class ScrollBar extends Component
     ///////////////////
 
     private function onThumbDown(e:InteractionEvent):Void {
-        if (!enabled || (inputPrimary && !e.data.isPrimary))
-            return;
-        if (Utils.eq(e.data.pointerType, PointerType.MOUSE) && inputMouse != null && inputMouse.length != 0 && inputMouse.indexOf(e.data.button) == -1)
+        if (!isActualInput(e))
             return;
         
         e.stopPropagation();
 
         thumb.on(PixiEvent.POINTER_MOVE, onThumbMove);
-        isDragging = true;
 
         POINT.x = e.data.global.x;
         POINT.y = e.data.global.y;
         thumb.toLocal(POINT, null, POINT);
         dragX = POINT.x;
         dragY = POINT.y;
+
+        if (!isDragged) {
+            isDragged = true;
+            Event.fire(Event.START_DRAG, this);
+        }
     }
 
     private function onThumbMove(e:InteractionEvent):Void {
-        if (!enabled || (inputPrimary && !e.data.isPrimary))
+        
+        // Перетаскивание контента мышкой.
+        // Проверка актуальности события:
+        if (!isActualInput(e) || !isDragged) {
+            thumb.off(PixiEvent.POINTER_MOVE, onThumbMove);
+            if (isDragged) { // <-- Слушатель более не актуален
+                isDragged = false;
+                Event.fire(Event.STOP_DRAG, this);
+            }
             return;
+        }
 
+        // Прокрутка ползунком:
         POINT.x = e.data.global.x;
         POINT.y = e.data.global.y;
         toLocal(POINT, null, POINT);
@@ -120,11 +135,14 @@ class ScrollBar extends Component
                 else 
                     thumb.x = Math.round(dx);
 
-                value = ((thumb.x - fx) / fw) * (max - min) + min;
+                if (invert)
+                    value = (1 - ((thumb.x - fx) / fw)) * (max - min) + min;
+                else
+                    value = ((thumb.x - fx) / fw) * (max - min) + min;
             }
             else {
                 thumb.x = Math.round(fx);
-                value = min;
+                value = invert?max:min;
             }
         }
         else { // Вертикальный
@@ -158,38 +176,60 @@ class ScrollBar extends Component
                 else 
                     thumb.y = Math.round(dy);
 
-                value = ((thumb.y - fy) / fh) * (max - min) + min;
+                if (invert)
+                    value = (1 - ((thumb.y - fy) / fh)) * (max - min) + min;
+                else
+                    value = ((thumb.y - fy) / fh) * (max - min) + min;
             }
             else {
                 thumb.y = Math.round(fy);
-                value = min;
+                value = invert?max:min;
             }
         }
+
+        // Событие:
+        Event.fire(Event.DRAG, this);
     }
 
     private function onThumbUp(e:InteractionEvent):Void {
-        if (!enabled || (inputPrimary && !e.data.isPrimary))
+        
+        // Перемещение ползунка завершено.
+        // Проверка актуальности события:
+        if (!isActualInput(e) || !isDragged)
             return;
-        if (Utils.eq(e.data.pointerType, PointerType.MOUSE) && inputMouse != null && inputMouse.length != 0 && inputMouse.indexOf(e.data.button) == -1)
-            return;
+        
+        // Целевое событие будет обработано только этим компонентом:
+        e.stopPropagation();
 
+        // Перетаскивание ползунка:
         thumb.off(PixiEvent.POINTER_MOVE, onThumbMove);
-        isDragging = false;
-        update(false, Component.UPDATE_SIZE); // <-- Update Thumb
+
+        // Событие:
+        if (isDragged) {
+            isDragged = false;
+            Event.fire(Event.STOP_DRAG, this);
+        }
+
+        // Обновление:
+        update(false, Component.UPDATE_SIZE);
     }
 
     private function onDecPress(e:Event):Void {
-        value -= step;
+        if (invert)
+            value += step;
+        else
+            value -= step;
     }
 
     private function onIncPress(e:Event):Void {
-        value += step;
+        if (invert)
+            value -= step;
+        else
+            value += step;
     }
 
     private function onBgDown(e:InteractionEvent):Void {
-        if (!enabled || (inputPrimary && !e.data.isPrimary))
-            return;
-        if (Utils.eq(e.data.pointerType, PointerType.MOUSE) && inputMouse != null && inputMouse.length != 0 && inputMouse.indexOf(e.data.button) == -1)
+        if (!isActualInput(e))
             return;
         
         e.stopPropagation();
@@ -199,18 +239,18 @@ class ScrollBar extends Component
     }
 
     private function onBgUp(e:InteractionEvent):Void {
-        if (!enabled || (inputPrimary && !e.data.isPrimary))
-            return;
-        if (Utils.eq(e.data.pointerType, PointerType.MOUSE) && inputMouse != null && inputMouse.length != 0 && inputMouse.indexOf(e.data.button) == -1)
+        if (!isActualInput(e))
             return;
 
         skinScroll.off(PixiEvent.POINTER_MOVE, onBgMove);
     }
 
     private function onBgMove(e:InteractionEvent):Void {
-        if (!enabled || (inputPrimary && !e.data.isPrimary))
+        if (!isActualInput(e)) {
+            skinScroll.off(PixiEvent.POINTER_MOVE, onBgMove);
             return;
-
+        }
+        
         POINT.x = e.data.global.x;
         POINT.y = e.data.global.y;
         toLocal(POINT, null, POINT);
@@ -235,7 +275,10 @@ class ScrollBar extends Component
                 if (!pointMode && thumb != null && POINT.x >= thumb.x && POINT.x <= thumb.x + thumb.w && POINT.y >= thumb.y && POINT.y <= thumb.y + thumb.h)
                     return;
 
-                value = ((POINT.x - fx) / fw) * (max - min) + min;
+                if (invert)
+                    value = (1 - ((POINT.x - fx) / fw)) * (max - min) + min;
+                else
+                    value = ((POINT.x - fx) / fw) * (max - min) + min;
             }
             else {
                 skinScroll.off(PixiEvent.POINTER_MOVE, onBgMove);
@@ -261,7 +304,10 @@ class ScrollBar extends Component
                 if (!pointMode && thumb != null && POINT.y >= thumb.y && POINT.y <= thumb.y + thumb.h && POINT.x >= thumb.x && POINT.x <= thumb.x + thumb.w)
                     return;
 
-                value = ((POINT.y - fy) / fh) * (max - min) + min;
+                if (invert)
+                    value = (1 - ((POINT.y - fy) / fh)) * (max - min) + min;
+                else
+                    value = ((POINT.y - fy) / fh) * (max - min) + min;
             }
             else {
                 skinScroll.off(PixiEvent.POINTER_MOVE, onBgMove);
@@ -279,6 +325,7 @@ class ScrollBar extends Component
         if (Utils.noeq(incBt, null)) incBt.enabled = value;
         if (Utils.noeq(decBt, null)) decBt.enabled = value;
         if (Utils.noeq(thumb, null)) thumb.enabled = value;
+
         return super.set_enabled(value);
     }
 
@@ -323,27 +370,41 @@ class ScrollBar extends Component
     }
 
     /**
+     * Поменять минимум и максимум на ползунке местами.
+     * 
+     * По умолчанию: `false`
+     */
+    public var invert(default, set):Bool = false;
+    function set_invert(value:Bool):Bool {
+        if (Utils.eq(value, invert))
+            return value;
+
+        invert = value;
+        update(false, Component.UPDATE_SIZE);
+        return value;
+    }
+
+    /**
      * Значение скроллбара.
+     * - Это значение не может быть меньше `min`.
+     * - Это значение не может быть больше `max`.
      * 
      * При установке нового значения регистрируются изменения в компоненте:
      * - `Component.UPDATE_SIZE` - Для повторного позицианирования.
      * 
      * По умолчанию: `0`
+     * 
+     * @event Event.CHANGE  Посылается в случае установки **нового** значения.
      */
     public var value(default, set):Float = 0;
     function set_value(value2:Float):Float {
         var v = calcValue(value2);
-        
         if (Utils.eq(v, value))
             return value2;
 
         value = v;
         update(false, Component.UPDATE_SIZE);
-
-        var e = Event.get(Event.CHANGE, this);
-        emit(Event.CHANGE, e);
-        Event.store(e);
-
+        Event.fire(Event.CHANGE, this);
         return value2;
     }
 
@@ -462,7 +523,6 @@ class ScrollBar extends Component
         }
 
         thumb = value;
-        isDragging = false;
 
         if (Utils.noeq(thumb, null)) {
             thumb.on(PixiEvent.POINTER_DOWN, onThumbDown);
@@ -470,27 +530,12 @@ class ScrollBar extends Component
             thumb.on(PixiEvent.POINTER_UP_OUTSIDE, onThumbUp);
         }
 
+        if (isDragged) {
+            isDragged = false;
+            Event.fire(Event.STOP_DRAG, this);
+        }
+
         update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
-        return value;
-    }
-
-    /**
-     * Режим точечного ползунка скроллбара.
-     * - Если `true` - Кнопка скролла не растягивается. Удобно для ползунка в виде точки.
-     * - Если `false` - Кнопка скролла растягивается. (По умолчанию)
-     * 
-     * При установке нового значения регистрируются изменения в компоненте:
-     * - `Component.UPDATE_SIZE` - Для повторного масштабирования.
-     * 
-     * По умолчанию: `false`
-     */
-    public var pointMode(default, set):Bool = false;
-    function set_pointMode(value:Bool):Bool {
-        if (Utils.eq(value, pointMode))
-            return value;
-
-        pointMode = value;
-        update(false, Component.UPDATE_SIZE);
         return value;
     }
 
@@ -523,6 +568,59 @@ class ScrollBar extends Component
         update(false, Component.UPDATE_SIZE);
         return value;
     }
+
+    /**
+     * Минимальный размер ползунка. (px)
+     * Позволяет задать минимальный размер ползунка.
+     * - Это значение используется совместно с `thumbScale`.
+     * - Это значение работает только при выключенном: `pointMode=false`.
+     * - Это значение не может быть меньше `1`
+     * 
+     * При установке нового значения регистрируются изменения в компоненте:
+     * - `Component.UPDATE_SIZE` - Для повторного позицианирования.
+     * 
+     * По умолчанию: `5`
+     */
+    public var thumbSizeMin(default, set):Int = 5;
+    function set_thumbSizeMin(value:Int):Int {
+        var v = value > 1 ? value : 1;
+        if (Utils.eq(v, thumbSizeMin))
+            return value;
+
+        thumbSizeMin = v;
+        update(false, Component.UPDATE_SIZE);
+        return value;
+    }
+
+    /**
+     * Режим точечного ползунка скроллбара.
+     * - Если `true` - Кнопка скролла не растягивается. Удобно для ползунка в виде точки.
+     * - Если `false` - Кнопка скролла растягивается. (По умолчанию)
+     * 
+     * При установке нового значения регистрируются изменения в компоненте:
+     * - `Component.UPDATE_SIZE` - Для повторного масштабирования.
+     * 
+     * По умолчанию: `false`
+     */
+    public var pointMode(default, set):Bool = false;
+    function set_pointMode(value:Bool):Bool {
+        if (Utils.eq(value, pointMode))
+            return value;
+
+        pointMode = value;
+        update(false, Component.UPDATE_SIZE);
+        return value;
+    }
+
+    /**
+     * Ползунок перетаскивается. (Флаг состояния)
+     * - Равно `true`, когда кнопка ползунка перетаскивается пользователем.
+     * - Это значение управляется автоматически, вы не можете его изменить.
+     * - При изменении значения посылаются события: `Event.START_DRAG` и `Event.STOP_DRAG`.
+     * 
+     * По умолчанию: `false`
+     */
+    public var isDragged(default, null):Bool = false;
 
     /**
      * Фон скроллера.
@@ -634,7 +732,7 @@ class ScrollBar extends Component
             Utils.delete(skinScrollDisable);
         }
 
-        isDragging = false;
+        isDragged = false;
 
         super.destroy(options);
     }
@@ -744,29 +842,37 @@ class ScrollBar extends Component
             
             // Ползунок:
             if (sc.pointMode) {
-                if (!sc.isDragging) {
+                if (!sc.isDragged) {
                     sc.thumb.y = Math.round(p.top + (Math.max(0, sc.h - p.top - p.bottom) / 2));
 
                     var v = sc.max - sc.min;
-                    if (v > 0) // Исключаем деление на ноль
-                        sc.thumb.x = Math.round(fx + fw * (((sc.value - sc.min) / v)));
+                    if (v > 0) { // Исключаем деление на ноль
+                        if (sc.invert)
+                            sc.thumb.x = Math.round(fx + fw * (1-((sc.value - sc.min) / v)));
+                        else
+                            sc.thumb.x = Math.round(fx + fw * ((sc.value - sc.min) / v));
+                    }
                     else 
                         sc.thumb.x = Math.round(fx);
                 }
             }
             else {
-                sc.thumb.w = Math.max(3, Math.round(fw * sc.thumbScale)); // 3px min size
+                sc.thumb.w = Math.max(sc.thumbSizeMin, Math.round(fw * sc.thumbScale));
                 sc.thumb.h = Math.max(1, Math.round(sc.h - p.top - p.bottom));
                 sc.thumb.update(true);
 
-                if (!sc.isDragging) {
+                if (!sc.isDragged) {
                     sc.thumb.y = Math.round(p.top);
 
                     var v = sc.max - sc.min;
-                    if (v > 0) // Исключаем деление на ноль
-                        sc.thumb.x = Math.round(fx + Math.max(0, fw - sc.thumb.w) * ((sc.value - sc.min) / v));
+                    if (v > 0) { // Исключаем деление на ноль
+                        if (sc.invert)
+                            sc.thumb.x = Math.round(fx + Math.max(0, fw - sc.thumb.w) * (1-((sc.value - sc.min) / v)));
+                        else
+                            sc.thumb.x = Math.round(fx + Math.max(0, fw - sc.thumb.w) * ((sc.value - sc.min) / v));
+                    }
                     else
-                        sc.thumb.x = Math.round(fx);
+                        sc.thumb.x = Math.round(fx);  
                 }
             }
         }
@@ -817,27 +923,35 @@ class ScrollBar extends Component
             
             // Ползунок:
             if (sc.pointMode) {
-                if (!sc.isDragging) {
+                if (!sc.isDragged) {
                     sc.thumb.x = Math.round(p.left + (Math.max(0, sc.w - p.left - p.right) / 2));
 
                     var v = sc.max - sc.min;
-                    if (v > 0) // Исключаем деление на ноль
-                        sc.thumb.y = Math.round(fy + fh * (((sc.value - sc.min) / v)));
+                    if (v > 0) { // Исключаем деление на ноль
+                        if (sc.invert)
+                            sc.thumb.y = Math.round(fy + fh * (1-((sc.value - sc.min) / v)));
+                        else
+                            sc.thumb.y = Math.round(fy + fh * ((sc.value - sc.min) / v));
+                    }
                     else 
                         sc.thumb.y = Math.round(fy);
                 }
             }
             else {
                 sc.thumb.w = Math.max(1, Math.round(sc.w - p.left - p.right));
-                sc.thumb.h = Math.max(3, Math.round(fh * sc.thumbScale)); // 3px min size
+                sc.thumb.h = Math.max(sc.thumbSizeMin, Math.round(fh * sc.thumbScale));
                 sc.thumb.update(true);
 
-                if (!sc.isDragging) {
+                if (!sc.isDragged) {
                     sc.thumb.x = Math.round(p.left);
 
                     var v = sc.max - sc.min;
-                    if (v > 0) // Исключаем деление на ноль
-                        sc.thumb.y = Math.round(fy + Math.max(0, fh - sc.thumb.h) * ((sc.value - sc.min) / v));
+                    if (v > 0) { // Исключаем деление на ноль
+                        if (sc.invert)
+                            sc.thumb.y = Math.round(fy + Math.max(0, fh - sc.thumb.h) * (1-((sc.value - sc.min) / v)));
+                        else
+                            sc.thumb.y = Math.round(fy + Math.max(0, fh - sc.thumb.h) * ((sc.value - sc.min) / v));
+                    }
                     else
                         sc.thumb.y = Math.round(fy);
                 }

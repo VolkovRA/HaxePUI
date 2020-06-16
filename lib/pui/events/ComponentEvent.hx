@@ -13,7 +13,7 @@ class ComponentEvent extends Event
      * Компонент интерфейса обновился. (Перерисовался)
      * Свойство `changes` содержит маску выполненных изменений.
      */
-    static public inline var UPDATE = "componentUpdate";
+    static public inline var UPDATED = "componentUpdated";
 
     /**
      * Создать событие компонента.
@@ -25,12 +25,7 @@ class ComponentEvent extends Event
     }
 
     /**
-     * Маска изменений компонента.
-     * 
-     * Содержит маску маску изменений, которую обновил компонент.
-     * 
-     * *Используется для событий:*
-     * - `ComponentEvent.UPDATE`
+     * Маска изменений.
      * 
      * Может быть `null`
      */

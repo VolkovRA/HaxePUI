@@ -3,7 +3,6 @@ package pui.ui;
 import js.Browser;
 import pui.ui.Component;
 import pui.events.Event;
-import pui.dom.PointerType;
 import pui.pixi.PixiEvent;
 import pixi.core.display.Container;
 import pixi.core.display.DisplayObject;
@@ -18,7 +17,7 @@ import haxe.extern.EitherType;
  * @event Event.CLICK               Клик по кнопке. Не путайте с событиями PixiJS. Это событие не диспетчерезируется, если кнопка была выключена: `enabled=false`.
  * @event Event.DOUBLE_CLICK        Двойной клик по кнопке. Необходимо отдельно включить в настройках кнопки: `Button.dblClick.enabled = true`.
  * @event Event.STATE               Состояние кнопки изменено.
- * @event ComponentEvent.UPDATE     Обновление компонента. (Перерисовка)
+ * @event ComponentEvent.UPDATED    Компонент обновился. (Перерисовался)
  * @event WheelEvent.WHEEL          Промотка колёсиком мыши. Это событие необходимо включить: `Component.inputWheel`.
  */
 class Button extends Component
@@ -44,8 +43,9 @@ class Button extends Component
      * Создать кнопку.
      */
     public function new() {
-        super(TYPE);
+        super();
         
+        this.componentType = TYPE;
         this.buttonMode = true;
         this.interactive = true;
 
@@ -66,7 +66,7 @@ class Button extends Component
     ///////////////////
 
     private function onRollOver(e:InteractionEvent):Void {
-        if (!enabled || (inputPrimary && !e.data.isPrimary))
+        if (!isActualInput(e))
             return;
 
         if (downCurrentButton)
@@ -75,7 +75,7 @@ class Button extends Component
             state = ButtonState.HOVER;
     }
     private function onRollOut(e:InteractionEvent):Void {
-        if (!enabled || (inputPrimary && !e.data.isPrimary))
+        if (!isActualInput(e))
             return;
 
         state = ButtonState.NORMAL;
@@ -91,9 +91,7 @@ class Button extends Component
         }
     }
     private function onDown(e:InteractionEvent):Void {
-        if (!enabled || (inputPrimary && !e.data.isPrimary))
-            return;
-        if (Utils.eq(e.data.pointerType, PointerType.MOUSE) && inputMouse != null && inputMouse.length != 0 && inputMouse.indexOf(e.data.button) == -1)
+        if (!isActualInput(e))
             return;
 
         e.stopPropagation();
@@ -106,9 +104,7 @@ class Button extends Component
             autopressTimeout = Browser.window.setTimeout(function(){
                 if (autopressInterval == 0) {
                     autopressInterval = Browser.window.setInterval(function(){
-                        var e = Event.get(Event.PRESS, this);
-                        emit(Event.PRESS, e);
-                        Event.store(e);
+                        Event.fire(Event.PRESS, this);
                     }, autopress.interval);
                 }
             }, autopress.delay);
@@ -125,9 +121,7 @@ class Button extends Component
             var pre = history[e.data.identifier];
             if (pre == null || item.t > pre.t + dblClick.time) {
                 history[e.data.identifier] = item;
-                var e = Event.get(Event.PRESS, this);
-                emit(Event.PRESS, e);
-                Event.store(e);
+                Event.fire(Event.PRESS, this);
                 return;
             }
 
@@ -135,31 +129,19 @@ class Button extends Component
             var dy = pre.y - item.y;
             if (Math.abs(dx*dx + dy*dy) > dblClick.dist * dblClick.dist) {
                 history[e.data.identifier] = item;
-                var e = Event.get(Event.PRESS, this);
-                emit(Event.PRESS, e);
-                Event.store(e);
+                Event.fire(Event.PRESS, this);
                 return;
             }
 
             history[e.data.identifier] = null;
-            
-            var e = Event.get(Event.PRESS, this);
-            var e2 = Event.get(Event.DOUBLE_CLICK, this);
-            emit(Event.PRESS, e);
-            emit(Event.DOUBLE_CLICK, e2);
-            Event.store(e);
-            Event.store(e2);
+            Event.fire(Event.PRESS, this);
+            Event.fire(Event.DOUBLE_CLICK, this);
             return;
         }
-        
-        var e = Event.get(Event.PRESS, this);
-        emit(Event.PRESS, e);
-        Event.store(e);
+        Event.fire(Event.PRESS, this);
     }
     private function onUp(e:InteractionEvent):Void {
-        if (!enabled || (inputPrimary && !e.data.isPrimary))
-            return;
-        if (Utils.eq(e.data.pointerType, PointerType.MOUSE) && inputMouse != null && inputMouse.length != 0 && inputMouse.indexOf(e.data.button) == -1)
+        if (!isActualInput(e))
             return;
         
         downCurrentButton = false;
@@ -174,13 +156,10 @@ class Button extends Component
             Browser.window.clearTimeout(autopressTimeout);
             autopressTimeout = 0;
         }
-
-        var e = Event.get(Event.CLICK, this);
-        emit(Event.CLICK, e);
-        Event.store(e);
+        Event.fire(Event.CLICK, this);
     }
     private function onUpOutside(e:InteractionEvent):Void {
-        if (!enabled || (inputPrimary && !e.data.isPrimary))
+        if (!isActualInput(e))
             return;
 
         downCurrentButton = false;
@@ -302,11 +281,7 @@ class Button extends Component
 
         state = value;
         update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
-
-        var e = Event.get(Event.STATE, this);
-        emit(Event.STATE, e);
-        Event.store(e);
-
+        Event.fire(Event.STATE, this);
         return value;
     }
 

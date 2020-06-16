@@ -1,8 +1,6 @@
 package pui.ui;
 
-import pui.dom.PointerType;
 import pui.events.Event;
-import pui.events.DragEvent;
 import pui.events.WheelEvent;
 import pui.geom.Vec2;
 import pui.ui.Component;
@@ -10,6 +8,7 @@ import pui.pixi.PixiEvent;
 import pixi.core.display.Container;
 import pixi.core.display.DisplayObject;
 import pixi.core.graphics.Graphics;
+import pixi.core.sprites.Sprite;
 import pixi.core.math.Point;
 import pixi.core.math.shapes.Rectangle;
 import pixi.interaction.InteractionEvent;
@@ -26,11 +25,10 @@ import haxe.extern.EitherType;
  * или обновления содержимого, чтобы инициировать гарантированное обновление
  * скроллера в случае изменения его содержимого.
  * 
- * @event DragEvent.START           Начало перетаскивания контента пользователем.
- * @event DragEvent.STOP            Завершение перетаскивания контента пользователем.
- * @event DragEvent.MOVE            Перетаскивание контента пользователем.
- * @event DragEvent.OVERDRAG        Перетаскивание контента пользователем за пределы доступной зоны.
- * @event ComponentEvent.UPDATE     Обновление компонента. (Перерисовка)
+ * @event Event.START_DRAG          Начало перетаскивания контента пользователем.
+ * @event Event.STOP_DRAG           Завершение перетаскивания контента пользователем.
+ * @event Event.DRAG                Перетаскивание контента пользователем.
+ * @event ComponentEvent.UPDATED    Компонент обновился. (Перерисовался)
  * @event WheelEvent.WHEEL          Промотка колёсиком мыши. Это событие изначально включено.
  */
 class Scroller extends Component
@@ -42,60 +40,52 @@ class Scroller extends Component
 
     static private var RECT:Rectangle = new Rectangle(0, 0, 0, 0);
     static private var POINT:Point = new Point(0, 0);
+    static private var VEC:Vec2 = new Vec2(0, 0);
     static private function OVERDRAG(x:Float, max:Float):Float {
         return 2*x*(1-x)*max + Math.pow(x,2)*max; // Кривая безье для избыточного натяжения
     }
 
     // Приват
-    private var contentMask:Graphics;
-    private var scrollIgnore:Bool = false;
-    private var scrollSetX:Float = -1;
-    private var scrollSetY:Float = -1;
-    private var isDragging:Bool = false;
+    private var inputs:Array<InputData> = new Array();
     private var dragX:Float = 0;
     private var dragY:Float = 0;
-    private var dragContentX:Float = 0;
-    private var dragContentY:Float = 0;
-    private var wheelScrollX:Float = 0;
-    private var wheelScrollY:Float = 0;
-    private var inputs:Array<InputData> = new Array();
+    private var scrollIgnore:Bool = false;
 
     /**
      * Создать скроллер.
      */
     public function new() {
-        super(TYPE);
+        super();
 
+        componentType = TYPE;
         inputWheel = true;
-        on(WheelEvent.WHEEL, onWheel);
-
-        contentMask = new Graphics();
-        contentMask.beginFill(0xff0000);
-        contentMask.drawRect(0, 0, 10, 10);
+        interactive = true;
 
         content = new Container();
         content.interactive = true;
-        content.on(PixiEvent.POINTER_DOWN, onContentDown);
-        content.on(PixiEvent.POINTER_UP, onContentUp);
-        content.on(PixiEvent.POINTER_UP_OUTSIDE, onContentUp);
-        content.mask = contentMask;
-
+        
         scrollV = new ScrollBar();
-        scrollV.min = 0;
-        scrollV.max = 1;
         scrollV.orientation = Orientation.VERTICAL;
         scrollV.on(Event.CHANGE, onScrollbarChangeV);
         scrollV.update(true);
 
         scrollH = new ScrollBar();
-        scrollH.min = 0;
-        scrollH.max = 1;
         scrollH.orientation = Orientation.HORIZONTAL;
         scrollH.on(Event.CHANGE, onScrollbarChangeH);
         scrollH.update(true);
 
+        var mask = new Graphics();
+        mask.beginFill(0xff0000);
+        mask.drawRect(0, 0, 10, 10);
+        contentMask = mask;
+
         Utils.set(this.updateLayers, Scroller.defaultLayers);
         Utils.set(this.updateSize, Scroller.defaultSize);
+
+        on(WheelEvent.WHEEL, onWheel);
+        on(PixiEvent.POINTER_DOWN, onContentDown);
+        on(PixiEvent.POINTER_UP, onContentUp);
+        on(PixiEvent.POINTER_UP_OUTSIDE, onContentUp);
     }
 
 
@@ -105,162 +95,259 @@ class Scroller extends Component
     ///////////////////
 
     private function onScrollbarChangeV(e:Event):Void {
-        if (scrollIgnore)
+        if (scrollIgnore || isDragged)
             return;
 
-        scrollSetY = scrollV.value;
+        contentY = scrollV.value;
+
+        if (velocity != null)
+            velocity.speed.y = 0;
+
         update(false, Component.UPDATE_SIZE);
     }
 
     private function onScrollbarChangeH(e:Event):Void {
-        if (scrollIgnore)
+        if (scrollIgnore || isDragged)
             return;
 
-        scrollSetX = scrollH.value;
+        contentX = scrollH.value;
+
+        if (velocity != null)
+            velocity.speed.x = 0;
+
         update(false, Component.UPDATE_SIZE);
     }
 
     private function onContentDown(e:InteractionEvent):Void {
-        if (!dragParams.enabled || !enabled || (inputPrimary && !e.data.isPrimary))
+        
+        // Перетаскивание контента мышкой.
+        // Проверка актуальности события:
+        if (!isActualInput(e) || drag == null || (!drag.allowX && !drag.allowY))
             return;
-        if (Utils.eq(e.data.pointerType, PointerType.MOUSE) && inputMouse != null && inputMouse.length != 0 && inputMouse.indexOf(e.data.button) == -1)
-            return;
-
+        
+        // Целевое событие будет обработано только этим компонентом:
         e.stopPropagation();
 
         // Перетаскивание контента:
-        if (dragParams.enabled) {
-            content.on(PixiEvent.POINTER_MOVE, onContentMove);
+        on(PixiEvent.POINTER_MOVE, onContentMove);
 
-            isDragging = true;
-    
-            // Save
-            POINT.x = e.data.global.x;
-            POINT.y = e.data.global.y;
-            content.toLocal(POINT, null, POINT);
-            dragX = POINT.x;
-            dragY = POINT.y;
-    
-            // Drag
+        // Сохраняем точку захвата:
+        POINT.x = e.data.global.x;
+        POINT.y = e.data.global.y;
+        content.toLocal(POINT, null, POINT);
+        dragX = POINT.x;
+        dragY = POINT.y;
+
+        // История ввода:
+        if (drag.inertia != null) {
             POINT.x = e.data.global.x;
             POINT.y = e.data.global.y;
             toLocal(POINT, null, POINT);
-    
-            dragContentX = POINT.x - dragX;
-            dragContentY = POINT.y - dragY;
-    
-            // Инерция:
-            if (dragParams.enabled && dragParams.inertia.enabled) {
-                inputs = new Array();
-                inputs[0] = { x:POINT.x, y:POINT.y, t:Utils.uptime() / 1000};
-            }
-            
-            update(false, Component.UPDATE_SIZE);
 
-            // Событие:
-            var e = DragEvent.get(DragEvent.START, this);
-            emit(DragEvent.START, e);
-            DragEvent.store(e);
+            inputs = new Array();
+            inputs[0] = { x:POINT.x, y:POINT.y, t:Utils.uptime()/1000};
+        }
+        
+        // Обновление:
+        update(false, Component.UPDATE_SIZE);
+
+        // Событие:
+        if (!isDragged) {
+            isDragged = true;
+            Event.fire(Event.START_DRAG, this);
         }
     }
 
     private function onContentMove(e:InteractionEvent):Void {
-        if (!dragParams.enabled || !enabled || (inputPrimary && !e.data.isPrimary))
+
+        // Перетаскивание контента мышкой.
+        // Проверка актуальности события:
+        if (!isActualInput(e) || drag == null || (!drag.allowX && !drag.allowY) || !isDragged) {
+            off(PixiEvent.POINTER_MOVE, onContentMove);
+            if (isDragged) { // <-- Слушатель более не актуален
+                isDragged = false;
+                Event.fire(Event.STOP_DRAG, this);
+            }
             return;
+        }
 
         // Перетаскивание контента:
-        if (dragParams.enabled) {
-            POINT.x = e.data.global.x;
-            POINT.y = e.data.global.y;
-            toLocal(POINT, null, POINT);
+        POINT.x = e.data.global.x;
+        POINT.y = e.data.global.y;
+        toLocal(POINT, null, POINT);
 
-            dragContentX = POINT.x - dragX;
-            dragContentY = POINT.y - dragY;
+        // Перетаскивание по X:
+        if (drag.allowX) {
+            if (velocity != null)
+                velocity.speed.x = 0;
 
-            // Инерция:
-            if (dragParams.inertia.enabled) {
-                if (inputs.length > 1000) // <-- Чтоб моя совесть была спокойна за утечку памяти
-                    inputs = new Array();
+            contentX = POINT.x - dragX;
 
-                inputs.push({ x:POINT.x, y:POINT.y, t:Utils.uptime() / 1000});
+            // Избыточное натяжение:
+            if (contentX > contentMaxX) {
+                if (outOfBounds != null && outOfBounds.allowX) {
+                    var p = Utils.eq(outW,0)?0:(Math.max(-outW, contentMaxX - contentX)/outW);
+                    contentX = contentMaxX + outW * OVERDRAG(-p, Utils.nvl(drag.outDistMax, 0.5));
+                }
+                else
+                    contentX = contentMaxX;
             }
-
-            update(false, Component.UPDATE_SIZE);
+            else if (contentX < contentMinX) {
+                if (outOfBounds != null && outOfBounds.allowX) {
+                    var p = Utils.eq(outW,0)?0:(Math.min(outW, contentMinX - contentX)/outW);
+                    contentX = contentMinX - outW * OVERDRAG(p, Utils.nvl(drag.outDistMax, 0.5));
+                }
+                else
+                    contentX = contentMinX;
+            }
         }
+
+        // Перетаскивание по Y:
+        if (drag.allowY) {
+            if (velocity != null)
+                velocity.speed.y = 0;
+
+            contentY = POINT.y - dragY;
+
+            // Избыточное натяжение:
+            if (contentY > contentMaxY) {
+                if (outOfBounds != null && outOfBounds.allowY) {
+                    var p = Utils.eq(outH,0)?0:(Math.max(-outH, contentMaxY - contentY)/outH);
+                    contentY = contentMaxY + outH * OVERDRAG(-p, Utils.nvl(drag.outDistMax, 0.5));
+                }
+                else
+                    contentY = contentMaxY;
+            }
+            else if (contentY < contentMinY) {
+                if (outOfBounds != null && outOfBounds.allowY) {
+                    var p = Utils.eq(outH,0)?0:(Math.min(outH, contentMinY - contentY)/outH);
+                    contentY = contentMinY - outH * OVERDRAG(p, Utils.nvl(drag.outDistMax, 0.5));
+                }
+                else
+                    contentY = contentMinY;
+            }
+        }
+
+        // История ввода:
+        if (drag.inertia != null) {
+            if (inputs.length > 1000) // <-- Чтоб моя совесть была спокойна за утечку памяти
+                inputs = new Array();
+
+            inputs.push({ x:POINT.x, y:POINT.y, t:Utils.uptime()/1000});
+        }
+
+        // Обновление:
+        update(false, Component.UPDATE_SIZE);
+
+        // Событие:
+        Event.fire(Event.DRAG, this);
     }
 
     private function onContentUp(e:InteractionEvent):Void {
-        if (!dragParams.enabled || !enabled || (inputPrimary && !e.data.isPrimary))
-            return;
-        if (Utils.eq(e.data.pointerType, PointerType.MOUSE) && inputMouse != null && inputMouse.length != 0 && inputMouse.indexOf(e.data.button) == -1)
-            return;
 
-        content.off(PixiEvent.POINTER_MOVE, onContentMove);
-        isDragging = false;
+        // Перетаскивание контента мышкой завершено.
+        // Проверка актуальности события:
+        if (!isActualInput(e) || drag == null || (!drag.allowX && !drag.allowY) || !isDragged)
+            return;
+        
+        // Целевое событие будет обработано только этим компонентом:
+        e.stopPropagation();
+        
+        // Перетаскивание контента:
+        off(PixiEvent.POINTER_MOVE, onContentMove);
 
         // Перетаскивание контента:
-        if (dragParams.enabled) {
-            POINT.x = e.data.global.x;
-            POINT.y = e.data.global.y;
-            toLocal(POINT, null, POINT);
+        POINT.x = e.data.global.x;
+        POINT.y = e.data.global.y;
+        toLocal(POINT, null, POINT);
 
-            // Инерция:
-            if (dragParams.inertia.enabled) {
-                inputs.push({ x:POINT.x, y:POINT.y, t:Utils.uptime() / 1000});
+        // Инерция:
+        if (drag.inertia != null && velocity != null) {
+            inputs.push({ x:POINT.x, y:POINT.y, t:Utils.uptime()/1000});
 
-                var t = Utils.uptime() / 1000 - dragParams.inertia.time;
-                var vel:Vec2 = new Vec2();
-                var st:InputData = null;
-                var len = inputs.length;
-                var i = len;
+            VEC.x = 0;
+            VEC.y = 0;
 
-                // Ищем начальную точку ввода:
-                while (i-- != 0) {
-                    if (inputs[i].t < t)
-                        break;
-                    else
-                        st = inputs[i];
-                }
+            var t = Utils.uptime()/1000 - Utils.nvl(drag.inertia.time, 0.15);
+            var st:InputData = null;
+            var len = inputs.length;
+            var i = len;
 
-                // Расчитываем вектор скорости:
-                if (st != null) {
-                    i += 2;
-                    while (i < len) {
-                        vel.x += inputs[i].x - st.x;
-                        vel.y += inputs[i].y - st.y;
-                        i ++;
-                    }
-
-                    // Передаём скорость контенту:
-                    if (vel.len() > dragParams.inertia.dist && velocity.enabled)
-                        velocity.speed.setFrom(vel).mul(dragParams.inertia.speed);
-                }
+            // Ищем начальную точку ввода:
+            while (i-- != 0) {
+                if (inputs[i].t < t)
+                    break;
+                else
+                    st = inputs[i];
             }
 
-            update(false, Component.UPDATE_SIZE);
+            // Расчитываем вектор скорости:
+            if (st != null) {
+                i += 2;
+                while (i < len) {
+                    VEC.x += inputs[i].x - st.x;
+                    VEC.y += inputs[i].y - st.y;
+                    i ++;
+                }
+                
+                // Передаём скорость контенту:
+                if (VEC.len() >= Utils.nvl(drag.inertia.dist, 50)) {
+                    velocity.speed.setFrom(VEC).mul(Utils.nvl(drag.inertia.speed, 1));
+                    
+                    if (!drag.inertia.allowX) velocity.speed.x = 0;
+                    if (!drag.inertia.allowY) velocity.speed.y = 0;
+                }
+            }
+        }
+        
+        // Обновление:
+        update(false, Component.UPDATE_SIZE);
 
-            // Событие:
-            var e = DragEvent.get(DragEvent.STOP, this);
-            emit(DragEvent.STOP, e);
-            DragEvent.store(e);
+        // Событие:
+        if (isDragged) {
+            isDragged = false;
+            Event.fire(Event.STOP_DRAG, this);
         }
     }
 
     private function onWheel(e:WheelEvent):Void {
         e.native.preventDefault();
         e.bubbling = false;
+        
+        var oldX = contentX;
+        var oldY = contentY;
+        if (e.native.deltaX > 0) {
+            contentX += scrollDist;
+            if (contentX > contentMaxX)
+                contentX = contentMaxX;
+            if (velocity != null)
+                velocity.speed.x = 0;
+        }
+        else if (e.native.deltaX < 0) {
+            contentX -= scrollDist;
+            if (contentX < contentMinX)
+                contentX = contentMinX;
+            if (velocity != null)
+                velocity.speed.x = 0;
+        }
 
-        if (e.native.deltaX > 0)
-            wheelScrollX += wheelScrollDist;
-        else if (e.native.deltaX < 0)
-            wheelScrollX -= wheelScrollDist;
+        if (e.native.deltaY > 0) {
+            contentY -= scrollDist;
+            if (contentY < contentMinY)
+                contentY = contentMinY;
+            if (velocity != null)
+                velocity.speed.y = 0;
+        }
+        else if (e.native.deltaY < 0) {
+            contentY += scrollDist;
+            if (contentY > contentMaxY)
+                contentY = contentMaxY;
+            if (velocity != null)
+                velocity.speed.y = 0;
+        }
 
-        if (e.native.deltaY > 0)
-            wheelScrollY -= wheelScrollDist;
-        else if (e.native.deltaY < 0)
-            wheelScrollY += wheelScrollDist;
-
-        update(false, Component.UPDATE_SIZE);
+        if (oldX != contentX || oldY != contentY)
+            update(false, Component.UPDATE_SIZE);
     }
 
 
@@ -269,100 +356,172 @@ class Scroller extends Component
     //   СВОЙСТВА   //
     //////////////////
 
-    override function set_enabled(value:Bool):Bool {
-        if (!value) {
-            content.off(PixiEvent.POINTER_MOVE, onContentMove);
-            isDragging = false;
-        }
-
-        scrollH.enabled = value;
-        scrollV.enabled = value;
-        return super.set_enabled(value);
-
-    }
+    /**
+     * Перетаскивание контента. (Флаг состояния)
+     * - Равно `true`, когда пользователь перетаскивает содержимое скроллера.
+     * - Это значение управляется автоматически, вы не можете его изменить.
+     * - При изменении значения посылаются события: `DragEvent.START` и `DragEvent.STOP`.
+     * 
+     * По умолчанию: `false`
+     */
+    public var isDragged(default, null):Bool = false;
 
     /**
-     * Контейнер с содержимым скроллера.
-     * Вы должны добавлять контент в скроллер именно сюда, а не в сам скроллер.
+     * Ширина области вывода. (px)
+     * 
+     * Содержит текущую, доступную ширину области отображения.
+     * Эта область меньше или равна ширине компонента `w`.
+     * На её размеры может влиять наличие ползунков.
+     * 
+     * Это значение всегда целочисленно.
+     * 
+     * Расчитывается каждый раз заного при обновлении. 
+     */
+    public var outW(default, null):Float = 0;
+
+     /**
+      * Высота области вывода. (px)
+      * 
+      * Содержит текущую, доступную высоту области отображения.
+      * Эта область меньше или равна высоте компонента `h`.
+      * На её размеры может влиять наличие ползунков.
+      * 
+      * Это значение всегда целочисленно.
+      * 
+      * Расчитывается каждый раз заного при обновлении. 
+      */
+    public var outH(default, null):Float = 0;
+
+    /**
+     * Контейнер с содержимым.
+     * 
+     * Вы **должны** добавлять новый контент именно сюда, а не в сам скроллер.
+     * Вы можете задать размеры содержимого в свойстве `contentBounds`, в противном
+     * случае, размеры будет вычисляться каждый раз автоматически при обновлении.
      * 
      * Не может быть `null`
      */
     public var content(default, null):Container;
 
     /**
-     * Позиция контейнера с содержимым по оси X.
+     * Маска контента.
      * 
-     * Это значение используется для позицианирования контейнера с содержимым.
-     * Эта отдельная переменная создана для того, что бы сохранить точность и 
-     * плавность вычислений и округлить реальную позицию самого контейнера.
-     * (Контейнер позицианируется по целочисленным координатам)
+     * Используется как обычная маска pixijs, для обрезания области отображения,
+     * выходящей за границы компонента. При каждом обновлении маске задаются
+     * ширина и высота области отображения.
      * 
-     * ```
-     * content.x = Math.round(contentX);
-     * content.y = Math.round(contentY);
-     * ```
+     * Если задать `null` - контент не будет обрезаться. 
+     * 
+     * При установке нового значения регистрируются изменения в компоненте:
+     * - `Component.UPDATE_LAYERS` - Для повторной перерисовки.
+     * - `Component.UPDATE_SIZE` - Для повторного позицианирования.
+     * 
+     * По умолчанию используется экземпляр `Graphics` 10x10. (Коробка)
+     */
+    public var contentMask(default, set):EitherType<Sprite, Graphics> = null;
+    function set_contentMask(value:EitherType<Sprite, Graphics>):EitherType<Sprite, Graphics> {
+        if (Utils.eq(value, contentMask))
+            return value;
+
+        Utils.hide(this, contentMask);
+        contentMask = value;
+        content.mask = value;
+        update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
+        return value;
+    }
+
+    /**
+     * Привязка позиции контейнера к целочисленным координатам:
+     * - Если `true`, позиция контейнера будет округляться: `x,y=Math.round(contentX,contentY)`.
+     * - Если `false`, позиция контейнера будет смещаться более плавно, но изображение
+     *   может стать размытым.
      * 
      * При установке нового значения регистрируются изменения в компоненте:
      * - `Component.UPDATE_SIZE` - Для повторного позицианирования.
      * 
-     * По умолчанию: `0`
+     * По умолчанию: `true` (Целочисленные координаты)
      */
-    public var contentX(default, set):Float = 0;
-    function set_contentX(value:Float):Float {
-        if (Utils.eq(value, contentX))
+    public var pixelHinting(default, set):Bool = true;
+    function set_pixelHinting(value:Bool):Bool {
+        if (Utils.eq(value, pixelHinting))
             return value;
-
-        contentX = value;
+        
+        pixelHinting = value;
         update(false, Component.UPDATE_SIZE);
         return value;
     }
 
     /**
-     * Позиция контейнера с содержимым по оси Y.
+     * Позиция контейнера с содержимым `content` по оси X. (px)
      * 
      * Это значение используется для позицианирования контейнера с содержимым.
-     * Эта отдельная переменная создана для того, что бы сохранить точность и 
-     * плавность вычислений и округлить реальную позицию самого контейнера.
-     * (Контейнер позицианируется по целочисленным координатам)
+     * Эта отдельная переменная нужна для того, что бы сохранить точность и 
+     * плавность вычислений при включенном режиме `pixelHinting`.
      * 
-     * ```
-     * content.x = Math.round(contentX);
-     * content.y = Math.round(contentY);
-     * ```
-     * 
-     * При установке нового значения регистрируются изменения в компоненте:
-     * - `Component.UPDATE_SIZE` - Для повторного позицианирования.
+     * Изменение значения не регистрирует обновление компонента.
+     * Для работы с позицией содержимого вы должны использовать это значение.
      * 
      * По умолчанию: `0`
      */
-    public var contentY(default, set):Float = 0;
-    function set_contentY(value:Float):Float {
-        if (Utils.eq(value, contentY))
-            return value;
-
-        contentY = value;
-        update(false, Component.UPDATE_SIZE);
-        return value;
-    }
+    public var contentX:Float = 0;
 
     /**
-     * Скорость возврата контента на место. (scale/sec)
+     * Минимальное значение `contentX`. (px)
      * 
-     * Это скалярное значение, в сколько раз сократится дистанция контента до его
-     * корректного местоположения за 1 секунду. Используется для возврата контента
-     * на место, если по каким то причинам он вышел за пределы дозволеной области.
+     * Это значение указывает крайнюю левую позицию для контейнера с содержимым.
+     * Расчитывается заного при каждом обновлений.
+     * Изменение значения не регистрирует обновление компонента.
      * 
-     * По умолчанию: `25`
+     * По умолчанию: `0`
      */
-    public var contentBackSpeed(default, set):Float = 25;
-    function set_contentBackSpeed(value:Float):Float {
-        if (value > 0)
-            contentBackSpeed = value;
-        else
-            contentBackSpeed = 0;
+    public var contentMinX(default, null):Float = 0;
 
-        return value;
-    }
+    /**
+     * Максимальное значение `contentX`. (px)
+     * 
+     * Это значение указывает крайнюю правую позицию для контейнера с содержимым.
+     * Расчитывается заного при каждом обновлений.
+     * Изменение значения не регистрирует обновление компонента.
+     * 
+     * По умолчанию: `0`
+     */
+    public var contentMaxX(default, null):Float = 0;
+
+    /**
+     * Позиция контейнера с содержимым `content` по оси Y. (px)
+     * 
+     * Это значение используется для позицианирования контейнера с содержимым.
+     * Эта отдельная переменная нужна для того, что бы сохранить точность и 
+     * плавность вычислений при включенном режиме `pixelHinting`.
+     * 
+     * Изменение значения не регистрирует обновление компонента.
+     * Для работы с позицией содержимого вы должны использовать это значение.
+     * 
+     * По умолчанию: `0`
+     */
+    public var contentY:Float = 0;
+
+    /**
+     * Минимальное значение `contentY`. (px)
+     * 
+     * Это значение указывает крайнюю верхнюю позицию для контейнера с содержимым.
+     * Расчитывается заного при каждом обновлений.
+     * Изменение значения не регистрирует обновление компонента.
+     * 
+     * По умолчанию: `0`
+     */
+    public var contentMinY(default, null):Float = 0;
+
+    /**
+     * Максимальное значение `contentY`. (px)
+     * 
+     * Это значение указывает крайнюю нижнюю позицию для контейнера с содержимым.
+     * Расчитывается заного при каждом обновлений.
+     * Изменение значения не регистрирует обновление компонента.
+     * 
+     * По умолчанию: `0`
+     */
+    public var contentMaxY(default, null):Float = 0;
 
     /**
      * Область контента.
@@ -386,54 +545,39 @@ class Scroller extends Component
     }
 
     /**
+     * Нативно вычисленная области контента.
+     * 
+     * Используется для получения размеров содержимого, когда пользователем
+     * не задано `contentBounds`. В этом случае расчитывается при каждом
+     * обновлении скроллера и сохраняет объект в это свойство.
+     * 
+     * По умолчанию: `null`
+     */
+    public var contentBoundsNative(default, null):Rectangle = null;
+
+    /**
      * Горизонтальный ползунок.
+     * 
      * Не может быть `null`
      */
     public var scrollH(default, null):ScrollBar;
 
     /**
      * Вертикальный ползунок.
+     * 
      * Не может быть `null`
      */
     public var scrollV(default, null):ScrollBar;
 
     /**
-     * Дистанция смещения контента при прокрутке колёсиком мыши. (px)
+     * Дистанция прокрутки. (px)
+     * 
+     * Используется для указания прокручиваемой области при скролле
+     * кнопками ползунков или при вращении колёсика мыши.
+     * 
      * По умолчанию: `100`
      */
-    public var wheelScrollDist:Float = 100;
-
-    /**
-     * Параметры управления свапом. (Перетаскивание пальцем/курсором)
-     * Не может быть `null`
-     */
-    public var dragParams(default, null):DragParams = {
-        enabled: true,
-        overdrag: {
-            enabled: true,
-            distMax: 0.5,
-        },
-        inertia: {
-            enabled: true,
-            speed:   1,
-            dist:    50,
-            time:    0.1,
-        }
-    }
-
-    /**
-     * Параметры скорости движения контента.
-     * Не может быть `null`
-     */
-    public var velocity(default, null):VelocityParams = {
-        enabled: true,
-        speed: new Vec2(0, 0),
-        speedMax: 0,
-        speedMin: 3,
-        speedDmp: 0.75
-    }
-
-    //public var wheel
+    public var scrollDist:Float = 100;
 
     /**
      * Режим отображения содержимого по оси X.
@@ -475,6 +619,31 @@ class Scroller extends Component
         return value;
     }
 
+    /**
+     * Параметры выхода содержимого за границы своей области.
+     * 
+     * Выход за границы разрешённой области - это когда позиция контейнера
+     * с содержимым оказывается за границами отображения. Эти параметры
+     * позволяют настроить такой выход.
+     * 
+     * По умолчанию: `null` (Контент не может оказаться за пределами отображения)
+     */
+    public var outOfBounds:OutOfBoundsParam = null;
+
+     /**
+      * Параметры управления перетаскиванием контента мышкой или касанием.
+      * 
+      * Не может быть `null`
+      */
+    public var drag:DragParams = null;
+ 
+     /**
+      * Параметры скорости движения контента.
+      * 
+      * Не может быть `null`
+      */
+    public var velocity:VelocityParams = null;
+
 
 
     ////////////////
@@ -491,8 +660,9 @@ class Scroller extends Component
         scrollH.destroy(options);
         Utils.delete(scrollH);
 
-        Utils.delete(dragParams);
+        Utils.delete(drag);
         Utils.delete(velocity);
+        Utils.delete(outOfBounds);
 
         super.destroy(options);
     }
@@ -547,282 +717,221 @@ class Scroller extends Component
         Utils.size(sc.skinBg, sc.w, sc.h);
         Utils.size(sc.skinBgDisable, sc.w, sc.h);
         
-        // События: (Диспетчерезируются в конце)
-        var evDrag:DragEvent = null;
-        var evDragOver:DragEvent = null;
-
         // Требуется ещё одно обновление:
         var needUPD = false;
 
         // Размеры контента:
         var b = sc.contentBounds;
-        if (Utils.eq(b, null))
-            b = sc.content.getLocalBounds(RECT);
+        if (Utils.eq(b, null)) {
+            b = sc.contentBoundsNative;
+            if (Utils.eq(b, null)) {
+                b = new Rectangle(0,0,0,0);
+                sc.contentBoundsNative = b;
+            }
+            sc.content.getLocalBounds(b);
+        }
 
         // Наличие ползунков:
         var sh = Utils.eq(sc.overflowX, Overflow.SCROLL) || (Utils.eq(sc.overflowX, Overflow.AUTO) && b.width > sc.w);
         var sv = Utils.eq(sc.overflowY, Overflow.SCROLL) || (Utils.eq(sc.overflowY, Overflow.AUTO) && b.height > sc.h);
 
         // Порт вывода:
-        var outW = sv?Math.max(0,sc.w-sc.scrollV.w):sc.w;
-        var outH = sh?Math.max(0,sc.h-sc.scrollH.h):sc.h;
-        var minX = b.width > outW?(-b.x-(b.width-outW)):-b.x;
-        var minY = b.height > outH?(-b.y-(b.height-outH)):-b.y;
+        sc.outW = sv?Math.max(0,sc.w-sc.scrollV.w):sc.w;
+        sc.outH = sh?Math.max(0,sc.h-sc.scrollH.h):sc.h;
 
-        // Ограничение позиции контента:
-        if (sc.isDragging) {
-            sc.velocity.speed.set(0, 0);
-            
-            // Режим перетаскивания контента курсором.
-            // Событие:
-            if (Utils.eq(evDrag, null))
-                evDrag = DragEvent.get(DragEvent.MOVE, sc);
+        // Диапазон движения контейнера:
+        sc.contentMaxX = -b.x;
+        sc.contentMaxY = -b.y;
+        sc.contentMinX = b.width > sc.outW?(-b.x-(b.width-sc.outW)):-b.x;
+        sc.contentMinY = b.height > sc.outH?(-b.y-(b.height-sc.outH)):-b.y;
 
-            // Избыточное натяжение по X:
-            if (sc.dragContentX > -b.x) {
-                if (sc.dragParams.overdrag.enabled) {
-                    if (Utils.eq(evDragOver, null))
-                        evDragOver = DragEvent.get(DragEvent.OVERDRAG, sc);
-                    evDragOver.overdragX = -b.x - sc.dragContentX;
-                    
-                    var p = Utils.eq(outW,0)?0:(Math.max(-outW, -b.x - sc.dragContentX)/outW);
-                    Utils.set(sc.contentX, -b.x + outW * OVERDRAG(-p, sc.dragParams.overdrag.distMax));
-                }
-                else {
-                    Utils.set(sc.contentX, sc.dragContentX);
-                }
-            }
-            else if (sc.dragContentX < minX) {
-                if (sc.dragParams.overdrag.enabled) {
-                    if (Utils.eq(evDragOver, null))
-                        evDragOver = DragEvent.get(DragEvent.OVERDRAG, sc);
-                    evDragOver.overdragX = minX - sc.dragContentX;
-                    
-                    var p = Utils.eq(outW,0)?0:(Math.min(outW, minX - sc.dragContentX)/outW);
-                    Utils.set(sc.contentX, minX - outW * OVERDRAG(p, sc.dragParams.overdrag.distMax));
-                }
-                else {
-                    Utils.set(sc.contentX, sc.dragContentX);
-                }
-            }
-            else {
-                Utils.set(sc.contentX, sc.dragContentX);
-            }
+        // Управление позицией контента:
+        if (!sc.isDragged) {
 
-            // Избыточное натяжение по Y:
-            if (sc.dragContentY > -b.y) {
-                if (sc.dragParams.overdrag.enabled) {
-                    if (Utils.eq(evDragOver, null))
-                        evDragOver = DragEvent.get(DragEvent.OVERDRAG, sc);
-                    evDragOver.overdragY = -b.y - sc.dragContentY;
-
-                    var p = Utils.eq(outH,0)?0:(Math.max(-outH, -b.y - sc.dragContentY)/outH);
-                    Utils.set(sc.contentY, -b.y + outH * OVERDRAG(-p, sc.dragParams.overdrag.distMax));
-                }
-                else {
-                    Utils.set(sc.contentY, sc.dragContentY);
-                }
-            }
-            else if (sc.dragContentY < minY) {
-                if (sc.dragParams.overdrag.enabled) {
-                    if (Utils.eq(evDragOver, null))
-                        evDragOver = DragEvent.get(DragEvent.OVERDRAG, sc);
-                    evDragOver.overdragY = minY - sc.dragContentY;
-
-                    var p = Utils.eq(outH,0)?0:(Math.min(outH, minY - sc.dragContentY)/outH);
-                    Utils.set(sc.contentY, minY - outH * OVERDRAG(p, sc.dragParams.overdrag.distMax));
-                }
-                else {
-                    Utils.set(sc.contentY, sc.dragContentY);
-                }
-            }
-            else {
-                Utils.set(sc.contentY, sc.dragContentY);
-            }
-        }
-        else {
-            
-            // Режим свободного перемещения контента.
-            // Промотка списка ползунками:
-            if (Utils.noeq(sc.scrollSetX, -1)) {
-                sc.velocity.speed.x = 0;
-                Utils.set(sc.contentX, -b.x - Math.max(0, b.width - outW) * sc.scrollSetX);
-            }
-            if (Utils.noeq(sc.scrollSetY, -1)) {
-                sc.velocity.speed.y = 0;
-                Utils.set(sc.contentY, -b.y - Math.max(0, b.height - outH) * sc.scrollSetY);
-            }
-            
-            // Промотка списка колёсиком мыши по X:
-            if (sc.wheelScrollX > 0) {
-                sc.velocity.speed.x = 0;
-
-                Utils.set(sc.contentX, sc.contentX + sc.wheelScrollX);
-                if (sc.contentX > -b.x)
-                    Utils.set(sc.contentX, -b.x);
-            }
-            else if (sc.wheelScrollX < 0) {
-                sc.velocity.speed.x = 0;
-
-                Utils.set(sc.contentX, sc.contentX + sc.wheelScrollX);
-                if (sc.contentX < minX)
-                    Utils.set(sc.contentX, minX);
-            }
-
-            // Промотка списка колёсиком мыши по Y:
-            if (sc.wheelScrollY > 0) {
-                sc.velocity.speed.y = 0;
-
-                Utils.set(sc.contentY, sc.contentY + sc.wheelScrollY);
-                if (sc.contentY > -b.y)
-                    Utils.set(sc.contentY, -b.y);
-            }
-            else if (sc.wheelScrollY < 0) {
-                sc.velocity.speed.y = 0;
-
-                Utils.set(sc.contentY, sc.contentY + sc.wheelScrollY);
-                if (sc.contentY < minY)
-                    Utils.set(sc.contentY, minY);
-            }
-
-            // Скорость движения контента:
-            if (sc.velocity.enabled && (Utils.noeq(sc.velocity.speed.x, 0) || Utils.noeq(sc.velocity.speed.y, 0))) {
-                if (sc.velocity.speedDmp > 0) // <-- Затухание
-                    sc.velocity.speed.mul(Math.max(0, 1 - sc.velocity.speedDmp * sc.theme.dt));
+            // Движение контента:
+            if (    sc.velocity != null && 
+                    (sc.velocity.allowX || sc.velocity.allowY) && 
+                    (Utils.noeq(sc.velocity.speed.x, 0) || Utils.noeq(sc.velocity.speed.y, 0))
+            ) {
                 
-                if (sc.velocity.speedMax > 0 && sc.velocity.speed.len() > sc.velocity.speedMax) // <-- Максимум
+                // Затухание:
+                var v:Float = Utils.nvl(sc.velocity.speedDmp, 0.75);
+                if (v > 0)
+                    sc.velocity.speed.mul(Math.max(0, 1 - v * sc.theme.dt));
+
+                // Максимум:
+                if (sc.velocity.speedMax > 0 && sc.velocity.speed.len() > sc.velocity.speedMax)
                     sc.velocity.speed.nrm().mul(sc.velocity.speedMax);
 
-                if (sc.velocity.speedMin > 0 && sc.velocity.speed.len() < sc.velocity.speedMin) // <-- Минимум
+                // Минимум:
+                v = Utils.nvl(sc.velocity.speedMin, 3);
+                if (v > 0 && sc.velocity.speed.len() < v)
                     sc.velocity.speed.set(0, 0);
                 else 
                     needUPD = true;
+                
+                // Движение по X:
+                if (sc.velocity.allowX) {
+                    if (sc.velocity.speed.x > 0) {
+                        if (sc.contentX < sc.contentMaxX) {
+                            sc.contentX += sc.velocity.speed.x * sc.theme.dt;
+                            if (sc.contentX >= sc.contentMaxX) {
+                                sc.contentX = sc.contentMaxX;
+                                sc.velocity.speed.x = 0;
+                            }
+                        }
+                        else
+                            sc.velocity.speed.x = 0;
+                    }
+                    else if (sc.velocity.speed.x < 0) {
+                        if (sc.contentX > sc.contentMinX) {
+                            sc.contentX += sc.velocity.speed.x * sc.theme.dt;
+                            if (sc.contentX <= sc.contentMinX) {
+                                sc.contentX = sc.contentMinX;
+                                sc.velocity.speed.x = 0;
+                            }
+                        }
+                        else
+                            sc.velocity.speed.x = 0;
+                    }
+                }
 
-                Utils.set(sc.contentX, sc.contentX + sc.velocity.speed.x * sc.theme.dt);
-                Utils.set(sc.contentY, sc.contentY + sc.velocity.speed.y * sc.theme.dt);
+                // Движение по Y:
+                if (sc.velocity.allowY) {
+                    if (sc.velocity.speed.y > 0) {
+                        if (sc.contentY < sc.contentMaxY) {
+                            sc.contentY += sc.velocity.speed.y * sc.theme.dt;
+                            if (sc.contentY >= sc.contentMaxY) {
+                                sc.contentY = sc.contentMaxY;
+                                sc.velocity.speed.y = 0;
+                            }
+                        }
+                        else
+                            sc.velocity.speed.y = 0;
+                    }
+                    else if (sc.velocity.speed.y < 0) {
+                        if (sc.contentY > sc.contentMinY) {
+                            sc.contentY += sc.velocity.speed.y * sc.theme.dt;
+                            if (sc.contentY <= sc.contentMinY) {
+                                sc.contentY = sc.contentMinY;
+                                sc.velocity.speed.y = 0;
+                            }
+                        }
+                        else
+                            sc.velocity.speed.y = 0;
+                    }
+                }
             }
             
-            // Ограничение области перемещения контента по X:
-            if (sc.contentX > -b.x) {
-                if (sc.velocity.speed.x > 0) {
-                    sc.velocity.speed.x = 0;
-                    Utils.set(sc.contentX, -b.x);
-                }
-                else {
-                    var dist = -b.x - sc.contentX;
+            // Ограничение области нахождения контента по X:
+            if (sc.contentX > sc.contentMaxX) {
+                if (sc.outOfBounds != null && sc.outOfBounds.allowX) {
+                    var dist = sc.contentMaxX - sc.contentX;
                     if (dist < -1) { // <-- Минимальная дистанция для анимации возврата: 1px.
-                        Utils.set(sc.contentX, sc.contentX + sc.contentBackSpeed * sc.theme.dt * dist);
-                        if (sc.contentX <= -b.x)
-                            Utils.set(sc.contentX, -b.x);
+                        sc.contentX += Utils.nvl(sc.outOfBounds.speedBack, 25) * sc.theme.dt * dist;
+                        if (sc.contentX <= sc.contentMaxX)
+                            sc.contentX = sc.contentMaxX;
                         else
                             needUPD = true;
                     }
-                    else {
-                        Utils.set(sc.contentX, -b.x);
-                    }
+                    else
+                        sc.contentX = sc.contentMaxX;
                 }
+                else
+                    sc.contentX = sc.contentMaxX;
             }
-            else if (sc.contentX < minX) {
-                if (sc.velocity.speed.x < 0) {
-                    sc.velocity.speed.x = 0;
-                    Utils.set(sc.contentX, minX);
-                }
-                else {
-                    sc.velocity.speed.x = 0;
-                    
-                    var dist = minX - sc.contentX;
+            else if (sc.contentX < sc.contentMinX) {
+                if (sc.outOfBounds != null && sc.outOfBounds.allowX) {
+                    var dist = sc.contentMinX - sc.contentX;
                     if (dist > 1) { // <-- Минимальная дистанция для анимации возврата: 1px.
-                        Utils.set(sc.contentX, sc.contentX + sc.contentBackSpeed * sc.theme.dt * dist);
-                        if (sc.contentX >= minX)
-                            Utils.set(sc.contentX, minX);
+                        sc.contentX += Utils.nvl(sc.outOfBounds.speedBack, 25) * sc.theme.dt * dist;
+                        if (sc.contentX >= sc.contentMinX)
+                            sc.contentX = sc.contentMinX;
                         else
                             needUPD = true;
                     }
-                    else {
-                        Utils.set(sc.contentX, minX);
-                    }
+                    else
+                        sc.contentX = sc.contentMinX;
                 }
+                else
+                    sc.contentX = sc.contentMinX;
             }
 
-            // Ограничение области перемещения контента по Y:
-            if (sc.contentY > -b.y) {
-                if (sc.velocity.speed.y > 0) {
-                    sc.velocity.speed.y = 0;
-                    Utils.set(sc.contentY, -b.y);
-                }
-                else {
-                    var dist = -b.y - sc.contentY;
+            // Ограничение области нахождения контента по Y:
+            if (sc.contentY > sc.contentMaxY) {
+                if (sc.outOfBounds != null && sc.outOfBounds.allowY) {
+                    var dist = sc.contentMaxY - sc.contentY;
                     if (dist < -1) { // <-- Минимальная дистанция для анимации возврата: 1px.
-                        Utils.set(sc.contentY, sc.contentY + sc.contentBackSpeed * sc.theme.dt * dist);
-                        if (sc.contentY <= -b.y)
-                            Utils.set(sc.contentY, -b.y);
+                        sc.contentY += Utils.nvl(sc.outOfBounds.speedBack, 25) * sc.theme.dt * dist;
+                        if (sc.contentY <= sc.contentMaxY)
+                            sc.contentY = sc.contentMaxY;
                         else
                             needUPD = true;
                     }
-                    else {
-                        Utils.set(sc.contentY, -b.y);
-                    }
+                    else
+                        sc.contentY = sc.contentMaxY;
                 }
+                else
+                    sc.contentY = sc.contentMaxY;
             }
-            else if (sc.contentY < minY) {
-                if (sc.velocity.speed.y < 0) {
-                    sc.velocity.speed.y = 0;
-                    Utils.set(sc.contentY, minY);
-                }
-                else {
-                    sc.velocity.speed.y = 0;
-                    
-                    var dist = minY - sc.contentY;
+            else if (sc.contentY < sc.contentMinY) {
+                if (sc.outOfBounds != null && sc.outOfBounds.allowY) {
+                    var dist = sc.contentMinY - sc.contentY;
                     if (dist > 1) { // <-- Минимальная дистанция для анимации возврата: 1px.
-                        Utils.set(sc.contentY, sc.contentY + sc.contentBackSpeed * sc.theme.dt * dist);
-                        if (sc.contentY >= minY)
-                            Utils.set(sc.contentY, minY);
+                        sc.contentY += Utils.nvl(sc.outOfBounds.speedBack, 25) * sc.theme.dt * dist;
+                        if (sc.contentY >= sc.contentMinY)
+                            sc.contentY = sc.contentMinY;
                         else
                             needUPD = true;
                     }
-                    else {
-                        Utils.set(sc.contentY,  minY);
-                    }
+                    else
+                        sc.contentY = sc.contentMinY;
                 }
+                else
+                    sc.contentY = sc.contentMinY;
             }
         }
-        sc.scrollSetX = -1;
-        sc.scrollSetY = -1;
-        sc.wheelScrollX = 0;
-        sc.wheelScrollY = 0;
 
         // Позицианирование:
-        sc.content.x = Math.round(sc.contentX);
-        sc.content.y = Math.round(sc.contentY);
+        if (sc.pixelHinting) {
+            sc.content.x = Math.round(sc.contentX);
+            sc.content.y = Math.round(sc.contentY);
+        }
+        else {
+            sc.content.x = sc.contentX;
+            sc.content.y = sc.contentY;
+        }
 
         // Маска:
-        sc.contentMask.width = outW;
-        sc.contentMask.height = outH;
+        Utils.size(sc.contentMask, sc.outW, sc.outH);
 
         // Ползунки:
         sc.scrollIgnore = true;
+        sc.scrollH.enabled = sc.enabled?(sc.outW < b.width):false;
         if (sh) {
-            var v = b.width - outW;
-            sc.scrollH.w = outW;
-            sc.scrollH.y = outH;
-            sc.scrollH.value = v>0?(-(sc.contentX + b.x) / v):0;
-            sc.scrollH.thumbScale = outW / b.width;
-            sc.scrollH.enabled = outW < b.width;
-
+            sc.scrollH.w = sc.outW;
+            sc.scrollH.y = sc.outH;
+            sc.scrollH.min = sc.contentMinX;
+            sc.scrollH.max = sc.contentMaxX;
+            sc.scrollH.value = sc.contentX;
+            sc.scrollH.thumbScale = sc.outW / b.width;
+            sc.scrollH.step = sc.scrollDist;
+            sc.scrollH.invert = true;
             Utils.show(sc, sc.scrollH);
         }
         else {
             Utils.hide(sc, sc.scrollH);
         }
-
+        sc.scrollV.enabled = sc.enabled?(sc.outH < b.height):false;
         if (sv) {
-            var v = b.height - outH;
-            sc.scrollV.h = outH;
-            sc.scrollV.x = outW;
-            sc.scrollV.value = v>0?(-(sc.contentY + b.y) / v):0;
-            sc.scrollV.thumbScale = outH / b.height;
-            sc.scrollV.enabled = outH < b.height;
-
+            sc.scrollV.h = sc.outH;
+            sc.scrollV.x = sc.outW;
+            sc.scrollV.min = sc.contentMinY;
+            sc.scrollV.max = sc.contentMaxY;
+            sc.scrollV.value = sc.contentY;
+            sc.scrollV.thumbScale = sc.outH / b.height;
+            sc.scrollV.step = sc.scrollDist;
+            sc.scrollV.invert = true;
             Utils.show(sc, sc.scrollV);
         }
         else {
@@ -833,80 +942,89 @@ class Scroller extends Component
         // Анимация не завершена:
         if (needUPD)
             sc.updateNext(Component.UPDATE_SIZE);
-
-        // События:
-        if (Utils.noeq(evDrag, null)) {
-            sc.emit(DragEvent.MOVE, evDrag);
-            DragEvent.store(evDrag);
-        }
-        if (Utils.noeq(evDragOver, null)) {
-            sc.emit(DragEvent.OVERDRAG, evDragOver);
-            DragEvent.store(evDragOver);
-        }
     }
 }
 
 /**
- * Параметры перетаскивания контента скроллера пальцем или курсором.
+ * Параметры выхода содержимого за пределы доступной зоны.
+ */
+typedef OutOfBoundsParam = 
+{
+    /**
+     * Разрешение на выход за пределы доступной зоны по оси X.
+     */
+    @:optional var allowX:Bool;
+
+    /**
+     * Разрешение на выход за пределы доступной зоны по оси Y.
+     */
+    @:optional var allowY:Bool;
+
+    /**
+     * Скорость возврата контента на своё место. (scale/sec)
+     * 
+     * Это скалярное значение, во сколько раз сократится дистанция контента до его
+     * корректного местоположения за 1 секунду. Используется для возврата контента
+     * на своё место.
+     * 
+     * Если не задано, используется значение по умолчанию: `25`
+     */
+    @:optional var speedBack:Float;
+}
+
+/**
+ * Параметры перетаскивания содержимого курсором или касанием.
  */
 typedef DragParams = 
 {
     /**
-     * Перетаскивание включено.
-     * По умолчанию: `true` (Включено)
+     * Разрешение на перетаскивание содержимого по оси X.
      */
-    var enabled:Bool;
+    @:optional var allowX:Bool;
 
     /**
-     * Параметры избыточного натяжения.
-     * Не может быть `null`
+     * Разрешение на перетаскивание содержимого по оси Y.
      */
-    var overdrag:OverdragParams;
+    @:optional var allowY:Bool;
+
+    /**
+     * Максимальная дистанция выхода за пределы доступной зоны. (0-1)
+     * 
+     * Значение используется для задания максимальной дистанции выхода контета
+     * за пределы доступной области отображения, где начение `1` - соответствует
+     * ширине и высоте самого компонента, для осей **x** и **y** соответственно.
+     * 
+     * пс. Это значение работает только при включенном режиме выхода за пределы:
+     * `outOfBoundsParam`.
+     * 
+     * Если не задано, используется значение по умолчанию: `0.5`. (Выход до середины)
+     */
+    @:optional var outDistMax:Float;
 
     /**
      * Параметры инерции.
-     * Не может быть `null`
-     */
-    var inertia:InertiaParams;
-}
-
-/**
- * Параметры избыточного натяжения.
- * Эти параметры влияют на то, как ведёт себя контент, когда он уже достиг предела
- * но его продлжают тянуть.
- */
-typedef OverdragParams = 
-{
-    /**
-     * Избыточное натяжение включено.
-     * По умолчанию: `true`
-     */
-    var enabled:Bool;
-
-    /**
-     * Максимальная дистанция отдаления. (0-1)
      * 
-     * Это значение указывает на то, как далеко может сместиться перетаскиваемый контент при
-     * избыточном его натяжении. Значение 1 - соответствует ширине и высоте самого компонента,
-     * для осей **x** и **y** соответственно.
+     * Позволяет запускать содержимое списка в полёт при помощи резкого свапа.
      * 
-     * По умолчанию: `0.5` (Контент можно дотянуть до середины компонента)
+     * Если не задано, инерция будет отключена.
      */
-    var distMax:Float;
+    @:optional var inertia:InertiaParams;
 }
 
 /**
  * Параметры инерции.
- * Позволяет запускать содержимое списка в полёт при помощи резкого свапа.
- * Тут вы можете настроить параметры.
  */
 typedef InertiaParams = 
 {
     /**
-     * Инерция включена.
-     * По умолчанию: `true`
+     * Инерция разрешена по оси X.
      */
-    var enabled:Bool;
+    @:optional var allowX:Bool;
+
+     /**
+      * Инерция разрешена по оси Y.
+      */
+    @:optional var allowY:Bool;
 
     /**
      * Интервал времени для расчёта свапа. (sec)
@@ -915,23 +1033,23 @@ typedef InertiaParams =
      * Чем он больше, тем больше последних событий ввода будут
      * учавствовать в расчётах.
      * 
-     * По умолчанию: `0.1`
+     * Если не задано, используется значение по умолчанию: `0.15`
      */
-    var time:Float;
+    @:optional var time:Float;
 
     /**
      * Множитель задаваемой скорости. (scale)
      * 
-     * По умолчанию: `1` (100%)
+     * Если не задано, используется значение по умолчанию: `1` (100%)
      */
-    var speed:Float;
+    @:optional var speed:Float;
 
     /**
      * Минимальная, пройденная дистанция для засчитывания свапа. (px)
      * 
-     * По умолчанию: `50`
+     * Если не задано, используется значение по умолчанию: `50`
      */
-    var dist:Float;
+    @:optional var dist:Float;
 }
 
 /**
@@ -940,16 +1058,20 @@ typedef InertiaParams =
 typedef VelocityParams = 
 {
     /**
-     * Движение включено.
-     * Если `true`, то контент в скроллере может перемещаться автоматически при заданной ему скорости движения.
-     * 
-     * По умолчанию: `true` (Включено)
+     * Разрешение на движение по оси X.
      */
-    var enabled:Bool;
+    @:optional var allowX:Bool;
+
+     /**
+      * Разрешение на движение по оси Y.
+      */
+    @:optional var allowY:Bool;
 
     /**
      * Скорость перемещения контента. (px/sec)
-     * Этот вектор описывает текущую скорость и направление движения.
+     * 
+     * Вектор описывает скорость и направление движения контента в
+     * рамках разрешённой области скроллинга.
      * 
      * Не может быть `null`
      */
@@ -958,29 +1080,36 @@ typedef VelocityParams =
     /**
      * Максимальная скорость движения контента. (px/sec)
      * 
-     * По умолчанию: `0` (Не ограничено)
+     * Если задано, используется для ограничения максимальной скорости
+     * перемещения контента.
      */
-    var speedMax:Float;
+    @:optional var speedMax:Float;
 
     /**
      * Минимальная скорость движения контента. (px/sec)
-     * Скорость движения менее этого значения сбрасывается до `0`.
      * 
-     * По умолчанию: `3`
+     * Если задано, используется для ограничения минимальной скорости
+     * перемещения контента. Скорость ниже этого значения сбрасывается
+     * до нуля.
+     * 
+     * Если не задано, используется значение по умолчанию: `3`
      */
-    var speedMin:Float;
+    @:optional var speedMin:Float;
 
     /**
-     * Коэффициент торможения скорости движения контента. (scale/sec)
+     * Коэффициент торможения. (scale/sec)
+     * 
+     * Используется для плавного затухания скорости движения.
      * Это скалярное значение, в сколько раз уменьшится скорость за 1 секунду.
      * 
-     * По умолчанию: `0.75`
+     * Если не задано, используется значение по умолчанию: `0.75`
      */
-    var speedDmp:Float;
+    @:optional var speedDmp:Float;
 }
 
 /**
  * Параметры ввода.
+ * Используется для хранения пользовательской информации ввода.
  */
 typedef InputData = 
 {

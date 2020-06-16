@@ -3,10 +3,12 @@ package pui.ui;
 import haxe.extern.EitherType;
 import js.lib.Error;
 import pui.dom.Mouse;
+import pui.dom.PointerType;
 import pui.events.ComponentEvent;
 import pixi.core.display.Container;
 import pixi.core.display.DisplayObject;
 import pixi.core.graphics.Graphics;
+import pixi.interaction.InteractionEvent;
 
 /**
  * Компонент графического интерфейса пользователя.
@@ -15,24 +17,23 @@ import pixi.core.graphics.Graphics;
  * Содержит встроенную систему для накопления изменений и фактического
  * обновления перед началом цикла рендера. (Смотрите свойство: `changes`)
  * 
- * @event ComponentEvent.UPDATE     Обновление компонента. (Перерисовка)
+ * @event ComponentEvent.UPDATED    Компонент обновился. (Перерисовался)
  * @event WheelEvent.WHEEL          Промотка колёсиком мыши. Это событие необходимо включить: `Component.inputWheel`.
  */
 class Component extends Container
 {
     /**
      * Создать компонент интерфейса.
-     * @param type Тип компонента.
      */
-    public function new(type:String) {
+    public function new() {
         super();
         
+        this.componentType = "Component";
         this.componentID = Component.nextID++;
         this.theme = Theme.current;
-        this.componentType = type;
 
-        Utils.set(this.updateLayers, Component.updateLayersDefault);
-        Utils.set(this.updateSize, Component.updateSizeDefault);
+        Utils.set(this.updateLayers, Component.defaultLayers);
+        Utils.set(this.updateSize, Component.defaultSize);
     }
 
 
@@ -87,14 +88,27 @@ class Component extends Container
     static public var nextID(default, null):Int = 1;
 
     /**
-     * ID Компонента.
+     * ID Компонента. (read-only)
      * 
      * Уникальный идентификатор среди всех созданных компонентов.
-     * Может использоваться для однозначной идентификации этого элемента интерфейса.
+     * Может использоваться для однозначной идентификации этого элемента
+     * интерфейса.
      * 
      * Отсчёт начинается с `1`.
      */
     public var componentID(default, null):Int;
+
+    /**
+     * Тип компонента. (read-only)
+     * 
+     * Используется для быстрого определения типа компонента, например,
+     * при его скиновании. Пример: `Label`, `Button`, `Scroller` и т.д.
+     * 
+     * Это значение можно изменять только в конструкторе класса или его
+     * подкласса. Оно должно быть **фиксированным** на протяжении всего
+     * времени жизни компонента.
+     */
+    public var componentType(default, null):String;
 
     /**
      * Компонент инициализирован.
@@ -113,7 +127,7 @@ class Component extends Container
      * Ожидание автоматической инициализации компонента:
      * ```
      * var bt:Component = new Button();
-     * bt.once(ComponentEvent.UPDATE, function(e:ComponentEvent){ trace("Кнопка инициализирована!"); });
+     * bt.once(ComponentEvent.UPDATED, function(e:ComponentEvent){ trace("Кнопка инициализирована!"); });
      * ```
      * 
      * По умолчанию: `false.`
@@ -157,15 +171,6 @@ class Component extends Container
     @:noDoc
     @:noCompletion
     private var themeRenderIndex:Int = 0;
-
-    /**
-     * Тип компонента. (read-only)
-     * 
-     * Используется для быстрого определения типа компонента при его скиновании. Пример: `Label`, `Button`.
-     * 
-     * Это свойство **должно** быть назначено расширяющим классом, реализующим конкретный компонент интерфейса.
-     */
-    public var componentType(default, null):String;
 
     /**
      * Накопленные изменения. *(Битовая маска)*
@@ -494,7 +499,7 @@ class Component extends Container
      * 
      * По умолчанию: `Component.updateSizeDefault`.
      */
-    public var updateSize(default, set):SizeUpdater<Dynamic> = Component.updateSizeDefault;
+    public var updateSize(default, set):SizeUpdater<Dynamic> = Component.defaultSize;
     function set_updateSize(value:SizeUpdater<Dynamic>):SizeUpdater<Dynamic> {
         if (Utils.eq(value, updateSize))
             return value;
@@ -520,7 +525,7 @@ class Component extends Container
      * 
      * По умолчанию: `Component.updateLayersDefault`.
      */
-    public var updateLayers(default, set):LayersUpdater<Dynamic> = Component.updateLayersDefault;
+    public var updateLayers(default, set):LayersUpdater<Dynamic> = Component.defaultLayers;
     function set_updateLayers(value:LayersUpdater<Dynamic>):LayersUpdater<Dynamic> {
         if (Utils.eq(value, updateLayers))
             return value;
@@ -635,7 +640,7 @@ class Component extends Container
      */
     @:allow(pui.Theme)
     private function onComponentUpdate():Void {
-        var e = ComponentEvent.get(ComponentEvent.UPDATE, this);
+        var e = ComponentEvent.get(ComponentEvent.UPDATED, this);
         e.changes = changes;
         
         // Обновление:
@@ -660,7 +665,7 @@ class Component extends Container
         changes = 0;
         isInit = true;
         
-        emit(ComponentEvent.UPDATE, e);
+        emit(ComponentEvent.UPDATED, e);
         ComponentEvent.store(e);
     }
 
@@ -704,6 +709,32 @@ class Component extends Container
         Utils.dwarBorder(skinDebug, 0, 0, w, h);
         skinDebug.beginFill(0xff0000, 0.8);
         Utils.drawText(skinDebug, w + "x" + h, 3, 3);
+    }
+
+    /**
+     * Проверить событие ввода на актуальность.
+     * - Возвращает `true`, если компонент **может** обрабатывать это событие.
+     * - Возвращает `false`, если компонент **не должен** обрабатывать это событие.
+     * 
+     * Компонент никогда не должен обрабатывать события ввода, если:
+     * 1. Компонент выключен: `enabled=false`.
+     * 2. Ввод не с основного устройства при заданной настройке: `inputPrimary=true`.
+     * 3. Ввод мышкой не соответствует разрешённым клавишам: `inputMouse=[]`.
+     * 
+     * Данный метод может быть полезен для подклассов, чтобы не писать одни
+     * одинаковые проверки несколько раз.
+     * 
+     * @param e Событие ввода.
+     * @return Результат проверки.
+     */
+    private function isActualInput(e:InteractionEvent):Bool {
+        if (    !enabled || 
+                (inputPrimary && !e.data.isPrimary) ||
+                (Utils.eq(e.data.pointerType, PointerType.MOUSE) && e.data.button > -1 && inputMouse != null && inputMouse.indexOf(e.data.button) == -1)
+        )
+            return false;
+        
+        return true;
     }
 
     /**
@@ -758,7 +789,7 @@ class Component extends Container
     /**
      * Базовое обновление списка отображения компонента.
      */
-    static public var updateLayersDefault:LayersUpdater<Component> = function(component) {
+    static public var defaultLayers:LayersUpdater<Component> = function(component) {
         if (component.enabled) {
             Utils.show(component, component.skinBg);
             Utils.hide(component, component.skinBgDisable);
@@ -778,7 +809,7 @@ class Component extends Container
     /**
      * Базовое обновление размеров компонента.
      */
-    static public var updateSizeDefault:SizeUpdater<Component> = function(component) {
+    static public var defaultSize:SizeUpdater<Component> = function(component) {
         Utils.size(component.skinBg, component.w, component.h);
         Utils.size(component.skinBgDisable, component.w, component.h);
     }

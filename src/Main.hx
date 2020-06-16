@@ -14,6 +14,21 @@ import js.Browser;
  */
 class Main
 {
+    static private var NAMES = [        "Liam", "Emma", "Noah", "Olivia", "Mason", "Ava", "Ethan", "Sophia", "Logan",
+                                        "Isabella", "Lucas", "Mia", "Jackson", "Charlotte", "Aiden", "Amelia",
+                                        "Oliver", "Emily", "Jacob", "Madison", "Elijah", "Harper", "Alexander",
+                                        "Abigail", "James", "Avery", "Benjamin", "Lily", "Jack", "Ella", "Luke",
+                                        "Chloe", "William", "Evelyn", "Michael", "Sofia", "Owen", "Aria", "Daniel",
+                                        "Ellie", "Carter", "Aubrey", "Gabriel", "Scarlett", "Henry", "Zoey", "Matthew",
+                                        "Hannah", "Wyatt", "Audrey", "Caleb", "Grace", "Jayden", "Addison", "Nathan",
+                                        "Zoe", "Ryan", "Elizabeth", "Isaac", "Nora"
+    ];
+    static private var ATTRIBUTES = [   "Strong", "Weak", "Smart", "Tall", "Drunk", "Humpbacked", "Clever", "Rich",
+                                        "Poor", "Stupid", "Beggar", "Shell-shocked", "Evil", "Kind", "Sick", "Impudent",
+                                        "Generous", "Brilliant", "Wet", "Nuts", "Sticky", "Iron", "Wood", "Dirty",
+                                        "Fragile", "Thick", "Fatty", "Thin", "Clean", "Red", "Blue", "Green", "Gray", "Dark"
+    ];
+
     private static var app:Application;
     private static var title1:Label;
     private static var title2:Label;
@@ -30,6 +45,10 @@ class Main
     private static var scrollersTitle:Label;
     private static var scroller1:Scroller;
     private static var scroller2:Scroller;
+    private static var listTitle:Label;
+    private static var list1:List;
+    private static var listTitle2:Label;
+    private static var list2:List;
 
     /**
      * Точка входа.
@@ -38,15 +57,17 @@ class Main
 
         // Запуск pixi:
         app = new Application({
-            width: 1000,
+            width: 1600,
             height: 600,
             backgroundColor: 0x111111,
         });
         app.start();
-        Browser.document.getElementsByTagName('body')[0].appendChild(app.view);
+        app.view.style.userSelect = "none";
+        Browser.document.getElementById('game').appendChild(app.view);
 
         // Создание темы:
         Theme.current = new MyTheme(app);
+        Theme.current.showError = false;
         Theme.current.on(ThemeEvent.UPDATE_FINISH, onThemeUpdateFinish);
 
         // Шапка:
@@ -151,19 +172,64 @@ class Main
         scroller1.y = scrollersTitle.y + 40;
         scroller1.w = 400;
         scroller1.h = 200;
-        scroller1.velocity.speed.x = -300;
+        scroller1.drag = { allowX:true, allowY:true, inertia:{ allowX:true, allowY:true }};
+        scroller1.outOfBounds = { allowX:true, allowY:true };
+        scroller1.velocity = { allowX:true, allowY:true, speed:new Vec2(-300, -50) };
         addCircles(scroller1.content);
         app.stage.addChild(scroller1);
 
         scroller2 = new Scroller();
+        scroller2.drag = scroller1.drag;
+        scroller2.outOfBounds = scroller1.outOfBounds;
+        scroller2.velocity = scroller1.velocity;
         scroller2.x = 900;
         addBox(scroller2.content);
         scroller1.content.addChild(scroller2);
+        
+        // Список:
+        listTitle = new Label("List of 1000000 items");
+        listTitle.x = 860;
+        listTitle.y = 130;
+        listTitle.w = 200;
+        app.stage.addChild(listTitle);
+
+        list1 = new List(ListItemLabel);
+        list1.x = listTitle.x;
+        list1.y = listTitle.y + 40;
+        list1.w = 300;
+        list1.h = 400;
+        list1.viewsSize = 30;
+        list1.viewsGap = 2;
+        list1.orientation = Orientation.VERTICAL;
+        list1.overflowX = Overflow.HIDDEN;
+        list1.overflowY = Overflow.AUTO;
+        rndNames(list1, 1000000);
+        app.stage.addChild(list1);
+
+        // Список динамический:
+        listTitle2 = new Label("List with dynamic size items");
+        listTitle2.x = 1210;
+        listTitle2.y = 130;
+        listTitle2.w = 200;
+        app.stage.addChild(listTitle2);
+
+        list2 = new List(CustomListItem);
+        list2.x = listTitle2.x;
+        list2.y = listTitle2.y + 40;
+        list2.w = 300;
+        list2.h = 400;
+        list2.viewsSize = 0;
+        list2.viewsGap = 2;
+        list2.orientation = Orientation.VERTICAL;
+        list2.overflowX = Overflow.HIDDEN;
+        list2.overflowY = Overflow.AUTO;
+        rndNames(list2, 50);
+        app.stage.addChild(list2);
     }
 
     static private function onThemeUpdateFinish(e:ThemeEvent):Void {
         if (e.updates > 0)
-            trace("UI Updates: " + e.updates);
+            trace("UI Updates: " + e.updates + ", total components: " + (Component.nextID-1));
     }
 
     static private function addCircles(container:Container):Void {
@@ -203,5 +269,14 @@ class Main
         var b = Math.floor(Math.random() * 0xff);
 
         return r + g + b;
+    }
+
+    static public function rndNames(list:List, num:Int):Void {
+        var i = 0;
+        var len1 = NAMES.length;
+        var len2 = ATTRIBUTES.length;
+        while(i < num) {
+            list.push(++i + ". " + NAMES[Math.floor(Math.random()*len1)] + ' ' + ATTRIBUTES[Math.floor(Math.random()*len2)]);
+        }
     }
 }

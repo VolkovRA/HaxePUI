@@ -50,7 +50,7 @@ class Utils
      * @return Результат сравнения.
      */
     static public inline function eq(v1:Dynamic, v2:Dynamic):Bool {
-        return Syntax.code('{0} === {1}', v1, v2);
+        return Syntax.code('({0} === {1})', v1, v2);
     }
 
     /**
@@ -64,7 +64,7 @@ class Utils
      * @return Результат сравнения.
      */
     static public inline function noeq(v1:Dynamic, v2:Dynamic):Bool {
-        return Syntax.code('{0} !== {1}', v1, v2);
+        return Syntax.code('({0} !== {1})', v1, v2);
     }
 
     /**
@@ -156,7 +156,7 @@ class Utils
      * @return Значение свойства.
      */
     public static inline function nvl<T>(prop:T, def:T):T {
-        return Syntax.code('{0} == null ? {1} : {0}', prop, def);
+        return Syntax.code('({0} == null ? {1} : {0})', prop, def);
     }
 
     /**
@@ -261,6 +261,23 @@ class Utils
     }
 
     /**
+     * Получить знак числа.
+     * - Возвращает `1`, если число больше нуля.
+     * - Возвращает `-1`, если число меньше нуля.
+     * - Возвращает `0` во всех остальных случаях.
+     * @param value Число.
+     * @return Знак числа.
+     */
+    public static function sign(value:Float):Int {
+        if (value > 0)
+            return 1;
+        if (value < 0)
+            return -1;
+        
+        return 0;
+    }
+
+    /**
      * Получить глубину вложенности ребёнка в корне.
      * - Возвращает **глубину вложенности**, если ребёнок содержится в корне или одном из его потомков.
      * - Возвращает `0`, если ребёнок является корнем.
@@ -289,6 +306,17 @@ class Utils
         }
 
         return 1000;
+    }
+
+    /**
+     * Создать обычный JavaScript массив заданной длины.
+     * 
+     * По сути является аналогом для использования конструктора: `new Vector(length)`.
+     * @param length Длина массива.
+     * @return Массив.
+     */
+    public static inline function createArray(length:Int):Dynamic {
+        return Syntax.code('new Array({0})', length);
     }
 
     /**

@@ -16,7 +16,7 @@ import haxe.extern.EitherType;
  * 
  * *пс. На данный момент поддержка растрового шрифта не проверена полностью.*
  * 
- * @event ComponentEvent.UPDATE     Обновление компонента. (Перерисовка)
+ * @event ComponentEvent.UPDATED    Компонент обновился. (Перерисовался)
  * @event WheelEvent.WHEEL          Промотка колёсиком мыши. Это событие необходимо включить: `Component.inputWheel`.
  */
 class Label extends Component
@@ -31,8 +31,9 @@ class Label extends Component
      * @param text Отображаемый текст.
      */
     public function new(text:String = "") {
-        super(TYPE);
+        super();
         
+        this.componentType = TYPE;
         this.text = text;
 
         Utils.set(this.updateLayers, Label.updateLayersDefault);

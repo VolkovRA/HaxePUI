@@ -8,9 +8,13 @@ import pui.ui.Label;
 import pui.ui.Component;
 import pui.ui.ScrollBar;
 import pui.ui.Scroller;
+import pui.ui.List;
+import pui.ui.ListItem;
+import pui.ui.ListItemLabel;
 import pui.pixi.PixiEvent;
 import pui.events.WheelEvent;
 import pui.events.ThemeEvent;
+import pui.geom.Vec2;
 import pixi.core.Application;
 import pixi.core.graphics.Graphics;
 import pixi.core.math.Point;
@@ -146,6 +150,14 @@ class Theme extends EventEmitter
      * По умолчанию: `0`
      */
     public var dt(default, null):Float = 0;
+
+    /**
+     * Вывод ошибок в консоль.
+     * - Если `true`, текст возникающих ошибок будет выводиться в консоль.
+     * 
+     * По умолчанию: `true`
+     */
+    public var showError:Bool = true;
 
     /**
      * Список компонентов для обновления в текущем цикле рендера.
@@ -385,7 +397,8 @@ class Theme extends EventEmitter
                     updates ++;
                 }
                 else {
-                    Browser.console.error("Компонент " + updateItems[i].toString() + " достиг лимита количества обновлений в одном цикле рендера (frame=" + frame + ") и будет пропущен, проверьте свойство: pui.Theme.updateMax", updateItems[i]);
+                    if (showError)
+                        Browser.console.error("Компонент " + updateItems[i].toString() + " достиг лимита количества обновлений в одном цикле рендера (frame=" + frame + ") и будет пропущен, проверьте свойство: pui.Theme.updateMax", updateItems[i]);
                 }
             }
 
@@ -412,6 +425,9 @@ class Theme extends EventEmitter
     @:noDoc
     @:noCompletion
     private function addUpdate(component:Component):Void {
+        if (Utils.noeq(updateLen, 0) && Utils.eq(updateItems[updateLen-1], component))
+            return; // <-- Этот компонент уже добавлен в список последним
+
         if (Utils.noeq(component.themeRenderFrame, frame)) {
             component.themeRenderFrame = frame;
             component.themeRenderCount = 0;
@@ -432,6 +448,9 @@ class Theme extends EventEmitter
     @:noDoc
     @:noCompletion
     private function addUpdateNext(component:Component, flags:BitMask):Void {
+        if (Utils.noeq(updateLenNext, 0) && Utils.eq(updateItemsNext[updateLenNext-1], component))
+            return; // <-- Этот компонент уже добавлен в список последним
+
         updateItemsNext[updateLenNext] = component;
         updateItemsFlagsNext[updateLenNext] = flags;
         updateLenNext ++;
@@ -469,7 +488,9 @@ class Theme extends EventEmitter
             return;
 
         errors[str] = true;
-        Browser.console.error(str);
+
+        if (showError)
+            Browser.console.error(str);
     }
 
     /**
@@ -499,6 +520,9 @@ class Theme extends EventEmitter
         else if (Utils.eq(component.componentType, Button.TYPE))        unknownStyleButton(untyped component);
         else if (Utils.eq(component.componentType, ScrollBar.TYPE))     unknownStyleScrollBar(untyped component);
         else if (Utils.eq(component.componentType, Scroller.TYPE))      unknownStyleScroller(untyped component);
+        else if (Utils.eq(component.componentType, List.TYPE))          unknownStyleList(untyped component);
+        else if (Utils.eq(component.componentType, ListItem.TYPE))      unknownStyleListItem(untyped component);
+        else if (Utils.eq(component.componentType, ListItemLabel.TYPE)) unknownStyleListItem(untyped component);
         else {
             var bg = new Graphics();
             bg.beginFill(COLOR_GRAY_DARK);
@@ -606,6 +630,52 @@ class Theme extends EventEmitter
             sc.w = 150;
         if (Utils.eq(sc.h, 0))
             sc.h = 150;
+    }
+
+    /**
+     * Дефолтное оформление `List`.
+     * Используется для подкраски компонентов, стиль которых не задан.
+     * @param list Элемент списка.
+     */
+    public function unknownStyleList(list:List):Void {
+        if (Utils.eq(list.skinBg, null)) {
+            var bg = new Graphics();
+            bg.interactive = true;
+            bg.beginFill(COLOR_GRAY_DARK);
+            bg.drawRect(0, 0, 10, 10);
+            list.skinBg = bg;
+        };
+
+        if (Utils.eq(list.orientation, Orientation.HORIZONTAL)) {
+            if (Utils.eq(list.w, 0))                list.w = 400;
+            if (Utils.eq(list.h, 0))                list.h = 200;
+            if (Utils.eq(list.magnet, null))        list.magnet = { enabled: true };
+            if (Utils.eq(list.outOfBounds, null))   list.outOfBounds = { allowX:true };
+            if (Utils.eq(list.drag, null))          list.drag = { allowX:true, inertia:{ allowX:true }};
+            if (Utils.eq(list.velocity, null))      list.velocity = { allowX:true, speed:new Vec2(0,0) };
+        }
+        else {
+            if (Utils.eq(list.w, 0))                list.w = 200;
+            if (Utils.eq(list.h, 0))                list.h = 400;
+            if (Utils.eq(list.magnet, null))        list.magnet = { enabled: true };
+            if (Utils.eq(list.outOfBounds, null))   list.outOfBounds = { allowY:true };
+            if (Utils.eq(list.drag, null))          list.drag = { allowY:true, inertia:{ allowY:true }};
+            if (Utils.eq(list.velocity, null))      list.velocity = { allowY:true, speed:new Vec2(0,0) };
+        }
+    }
+
+    /**
+     * Дефолтное оформление `ListItem`.
+     * Используется для подкраски компонентов, стиль которых не задан.
+     * @param item Элемент списка.
+     */
+    public function unknownStyleListItem(item:ListItem):Void {
+        if (Utils.eq(item.w, 0))
+            item.w = 50;
+        if (Utils.eq(item.h, 0))
+            item.h = 50;
+
+        item.debug = true;
     }
 
     /**
