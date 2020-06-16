@@ -31,12 +31,6 @@ class ScrollBar extends Component
      * Используется для повторных вычислений внутри компонента.
      */
     static private var POINT:Point = new Point(0, 0);
-
-    /**
-     * Кешированный `Padding`.
-     * Используется для повторных вычислений внутри компонента.
-     */
-    static private var PADDING:Offset = { top:0, left:0, right:0, bottom:0 };
     
     // Приват
     private var dragX:Float = 0;
@@ -99,15 +93,22 @@ class ScrollBar extends Component
         toLocal(POINT, null, POINT);
 
         // Отступы:
-        var p = PADDING;
-        if (Utils.noeq(padding, null))
-            p = padding;
+        var pt:Float = 0;
+        var pr:Float = 0;
+        var pl:Float = 0;
+        var pb:Float = 0;
+        if (padding != null) {
+            if (padding.top != null)     pt = padding.top;
+            if (padding.left != null)    pl = padding.left;
+            if (padding.right != null)   pr = padding.right;
+            if (padding.bottom != null)  pb = padding.bottom;
+        }
 
         // Перетаскивание:
         if (Utils.eq(orientation, Orientation.HORIZONTAL)) { // Горизонтальный
             var dx:Float = POINT.x - dragX;
-            var fx:Float = p.left;
-            var fw:Float = w - p.left - p.right;
+            var fx:Float = pl;
+            var fw:Float = w - pl - pr;
 
             if (Utils.noeq(decBt, null)) {
                 fx += decBt.w;
@@ -119,11 +120,11 @@ class ScrollBar extends Component
 
             // Тип ползунка:
             if (pointMode) {
-                thumb.y = Math.round(p.top + (h - p.top - p.bottom) / 2);
+                thumb.y = Math.round(pt + (h - pt - pb) / 2);
             }
             else {
                 fw -= thumb.w;
-                thumb.y = Math.round(p.top);
+                thumb.y = Math.round(pt);
             }
 
             // Позиция ползунка:
@@ -147,8 +148,8 @@ class ScrollBar extends Component
         }
         else { // Вертикальный
             var dy:Float = POINT.y - dragY;
-            var fy:Float = p.top;
-            var fh:Float = h - p.top - p.bottom;
+            var fy:Float = pt;
+            var fh:Float = h - pt - pb;
 
             if (Utils.noeq(decBt, null)) {
                 fy += decBt.h;
@@ -160,11 +161,11 @@ class ScrollBar extends Component
 
             // Тип ползунка:
             if (pointMode) {
-                thumb.x = Math.round(p.left + (w - p.left - p.right) / 2);
+                thumb.x = Math.round(pl + (w - pl - pr) / 2);
             }
             else {
                 fh -= thumb.h;
-                thumb.x = Math.round(p.left);
+                thumb.x = Math.round(pl);
             }
 
             // Позиция ползунка:
@@ -331,6 +332,8 @@ class ScrollBar extends Component
 
     /**
      * Минимальное значение.
+     * - Это значение не может быть больше `max`.
+     * - Обновляет текущее значение `value`, если оно меньше нового `min`.
      * 
      * При установке нового значения регистрируются изменения в компоненте:
      * - `Component.UPDATE_SIZE` - Для повторного позицианирования.
@@ -351,6 +354,8 @@ class ScrollBar extends Component
 
     /**
      * Максимальное значение.
+     * - Это значение не может быть меньше `min`.
+     * - Обновляет текущее значение `value`, если оно больше нового `max`.
      * 
      * При установке нового значения регистрируются изменения в компоненте:
      * - `Component.UPDATE_SIZE` - Для повторного позицианирования.
@@ -710,7 +715,7 @@ class ScrollBar extends Component
     /**
      * Выгрузить скроллбар.
 	 */
-     override function destroy(?options:EitherType<Bool, DestroyOptions>) {
+    override function destroy(?options:EitherType<Bool, DestroyOptions>) {
         if (Utils.noeq(incBt, null)) {
             incBt.destroy(options);
             Utils.delete(incBt);
@@ -790,9 +795,16 @@ class ScrollBar extends Component
         Utils.size(sc.skinBgDisable, sc.w, sc.h);
 
         // Отступы:
-        var p = PADDING;
-        if (Utils.noeq(sc.padding, null))
-            p = sc.padding;
+        var pt:Float = 0;
+        var pr:Float = 0;
+        var pl:Float = 0;
+        var pb:Float = 0;
+        if (sc.padding != null) {
+            if (sc.padding.top != null)     pt = sc.padding.top;
+            if (sc.padding.left != null)    pl = sc.padding.left;
+            if (sc.padding.right != null)   pr = sc.padding.right;
+            if (sc.padding.bottom != null)  pb = sc.padding.bottom;
+        }
 
         // Позицианирование:
         if (Utils.eq(sc.orientation, Orientation.HORIZONTAL)) { // Горизонтальный
@@ -834,8 +846,8 @@ class ScrollBar extends Component
             if (Utils.eq(sc.thumb, null))
                 return;
 
-            fx += p.left;
-            fw -= p.left + p.right;
+            fx += pl;
+            fw -= pl + pr;
 
             if (fw < 0)
                 fw = 0;
@@ -843,7 +855,7 @@ class ScrollBar extends Component
             // Ползунок:
             if (sc.pointMode) {
                 if (!sc.isDragged) {
-                    sc.thumb.y = Math.round(p.top + (Math.max(0, sc.h - p.top - p.bottom) / 2));
+                    sc.thumb.y = Math.round(pt + (Math.max(0, sc.h - pt - pb) / 2));
 
                     var v = sc.max - sc.min;
                     if (v > 0) { // Исключаем деление на ноль
@@ -858,11 +870,11 @@ class ScrollBar extends Component
             }
             else {
                 sc.thumb.w = Math.max(sc.thumbSizeMin, Math.round(fw * sc.thumbScale));
-                sc.thumb.h = Math.max(1, Math.round(sc.h - p.top - p.bottom));
+                sc.thumb.h = Math.max(1, Math.round(sc.h - pt - pb));
                 sc.thumb.update(true);
 
                 if (!sc.isDragged) {
-                    sc.thumb.y = Math.round(p.top);
+                    sc.thumb.y = Math.round(pt);
 
                     var v = sc.max - sc.min;
                     if (v > 0) { // Исключаем деление на ноль
@@ -915,8 +927,8 @@ class ScrollBar extends Component
             if (Utils.eq(sc.thumb, null))
                 return;
 
-            fy += p.top;
-            fh -= p.top + p.bottom;
+            fy += pt;
+            fh -= pt + pb;
 
             if (fh < 0)
                 fh = 0;
@@ -924,7 +936,7 @@ class ScrollBar extends Component
             // Ползунок:
             if (sc.pointMode) {
                 if (!sc.isDragged) {
-                    sc.thumb.x = Math.round(p.left + (Math.max(0, sc.w - p.left - p.right) / 2));
+                    sc.thumb.x = Math.round(pl + (Math.max(0, sc.w - pl - pr) / 2));
 
                     var v = sc.max - sc.min;
                     if (v > 0) { // Исключаем деление на ноль
@@ -938,12 +950,12 @@ class ScrollBar extends Component
                 }
             }
             else {
-                sc.thumb.w = Math.max(1, Math.round(sc.w - p.left - p.right));
+                sc.thumb.w = Math.max(1, Math.round(sc.w - pl - pr));
                 sc.thumb.h = Math.max(sc.thumbSizeMin, Math.round(fh * sc.thumbScale));
                 sc.thumb.update(true);
 
                 if (!sc.isDragged) {
-                    sc.thumb.x = Math.round(p.left);
+                    sc.thumb.x = Math.round(pl);
 
                     var v = sc.max - sc.min;
                     if (v > 0) { // Исключаем деление на ноль

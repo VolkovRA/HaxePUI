@@ -9,20 +9,20 @@ typedef Offset =
     /**
      * Верхний отступ. (px)
      */
-    var top:Float;
+    @:optional var top:Float;
 
     /**
      * Левый отступ. (px)
      */
-    var left:Float;
+    @:optional var left:Float;
 
     /**
      * Правый отступ. (px)
      */
-    var right:Float;
+    @:optional var right:Float;
 
     /**
      * Нижний отступ. (px)
      */
-    var bottom:Float;
+    @:optional var bottom:Float;
 }

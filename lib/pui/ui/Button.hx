@@ -27,12 +27,6 @@ class Button extends Component
      */
     static public inline var TYPE:String = "Button";
 
-    /**
-     * Кешированный отступ.
-     * Используется для повторных вычислений внутри компонента.
-     */
-    static private var PADDING:Offset = { top:0, left:0, right:0, bottom:0 };
-
     // Приват
     private var history:Dynamic = {};
     private var downCurrentButton:Bool = false;
@@ -955,23 +949,47 @@ class Button extends Component
         // Параметры:
         var ico = bt.ico;
         var label = bt.label;
-        var p = Utils.eq(bt.padding, null)?PADDING:bt.padding;
+        var pt:Float = 0;
+        var pr:Float = 0;
+        var pl:Float = 0;
+        var pb:Float = 0;
+        if (bt.padding != null) {
+            if (bt.padding.top != null)     pt = bt.padding.top;
+            if (bt.padding.left != null)    pl = bt.padding.left;
+            if (bt.padding.right != null)   pr = bt.padding.right;
+            if (bt.padding.bottom != null)  pb = bt.padding.bottom;
+        }
 
         // Состояние:
         if (!bt.enabled) { // Выключено
             if (Utils.noeq(bt.icoDisable, null))        ico = bt.icoDisable;
             if (Utils.noeq(bt.labelDisable, null))      label = bt.labelDisable;
-            if (Utils.noeq(bt.paddingDisable, null))    p = bt.paddingDisable;
+            if (Utils.noeq(bt.paddingDisable, null)) {
+                if (bt.paddingDisable.top != null)      pt = bt.paddingDisable.top;
+                if (bt.paddingDisable.left != null)     pl = bt.paddingDisable.left;
+                if (bt.paddingDisable.right != null)    pr = bt.paddingDisable.right;
+                if (bt.paddingDisable.bottom != null)   pb = bt.paddingDisable.bottom;
+            }
         }
         else if (Utils.eq(bt.state, ButtonState.HOVER)) { // Наведение
             if (Utils.noeq(bt.icoHover, null))          ico = bt.icoHover;
             if (Utils.noeq(bt.labelHover, null))        label = bt.labelHover;
-            if (Utils.noeq(bt.paddingHover, null))      p = bt.paddingHover;
+            if (Utils.noeq(bt.paddingHover, null)) {
+                if (bt.paddingHover.top != null)        pt = bt.paddingHover.top;
+                if (bt.paddingHover.left != null)       pl = bt.paddingHover.left;
+                if (bt.paddingHover.right != null)      pr = bt.paddingHover.right;
+                if (bt.paddingHover.bottom != null)     pb = bt.paddingHover.bottom;
+            }
         }
         else if (Utils.eq(bt.state, ButtonState.PRESS)) { // Нажатие
             if (Utils.noeq(bt.icoPress, null))          ico = bt.icoPress;
             if (Utils.noeq(bt.labelPress, null))        label = bt.labelPress;
-            if (Utils.noeq(bt.paddingPress, null))      p = bt.paddingPress;
+            if (Utils.noeq(bt.paddingPress, null)) {
+                if (bt.paddingPress.top != null)        pt = bt.paddingPress.top;
+                if (bt.paddingPress.left != null)       pl = bt.paddingPress.left;
+                if (bt.paddingPress.right != null)      pr = bt.paddingPress.right;
+                if (bt.paddingPress.bottom != null)     pb = bt.paddingPress.bottom;
+            }
         }
 
         // Позицианирование:
@@ -981,15 +999,15 @@ class Button extends Component
                 label.alignY = AlignY.TOP;
                 label.autosize = true;
                 label.update(true);
-                label.x = Math.round(bt.w - label.w - p.right);
-                label.y = Math.round(p.top);
+                label.x = Math.round(bt.w - label.w - pr);
+                label.y = Math.round(pt);
                 
-                ico.x = Math.round(p.left);
-                ico.y = Math.round(p.top);
+                ico.x = Math.round(pl);
+                ico.y = Math.round(pt);
             }
             else {
-                ico.x = Math.round(p.left);
-                ico.y = Math.round(p.top);
+                ico.x = Math.round(pl);
+                ico.y = Math.round(pt);
             }
         }
         else {
@@ -998,8 +1016,8 @@ class Button extends Component
                 label.alignY = AlignY.TOP;
                 label.autosize = true;
                 label.update(true);
-                label.x = Math.round(bt.w - label.w - p.right);
-                label.y = Math.round(p.top);
+                label.x = Math.round(bt.w - label.w - pr);
+                label.y = Math.round(pt);
             }
         }
     }
@@ -1025,23 +1043,47 @@ class Button extends Component
         // Параметры:
         var ico = bt.ico;
         var label = bt.label;
-        var p = Utils.eq(bt.padding, null)?PADDING:bt.padding;
+        var pt:Float = 0;
+        var pr:Float = 0;
+        var pl:Float = 0;
+        var pb:Float = 0;
+        if (bt.padding != null) {
+            if (bt.padding.top != null)     pt = bt.padding.top;
+            if (bt.padding.left != null)    pl = bt.padding.left;
+            if (bt.padding.right != null)   pr = bt.padding.right;
+            if (bt.padding.bottom != null)  pb = bt.padding.bottom;
+        }
 
         // Состояние:
         if (!bt.enabled) { // Выключено
             if (Utils.noeq(bt.icoDisable, null))        ico = bt.icoDisable;
             if (Utils.noeq(bt.labelDisable, null))      label = bt.labelDisable;
-            if (Utils.noeq(bt.paddingDisable, null))    p = bt.paddingDisable;
+            if (Utils.noeq(bt.paddingDisable, null)) {
+                if (bt.paddingDisable.top != null)      pt = bt.paddingDisable.top;
+                if (bt.paddingDisable.left != null)     pl = bt.paddingDisable.left;
+                if (bt.paddingDisable.right != null)    pr = bt.paddingDisable.right;
+                if (bt.paddingDisable.bottom != null)   pb = bt.paddingDisable.bottom;
+            }
         }
         else if (Utils.eq(bt.state, ButtonState.HOVER)) { // Наведение
             if (Utils.noeq(bt.icoHover, null))          ico = bt.icoHover;
             if (Utils.noeq(bt.labelHover, null))        label = bt.labelHover;
-            if (Utils.noeq(bt.paddingHover, null))      p = bt.paddingHover;
+            if (Utils.noeq(bt.paddingHover, null)) {
+                if (bt.paddingHover.top != null)        pt = bt.paddingHover.top;
+                if (bt.paddingHover.left != null)       pl = bt.paddingHover.left;
+                if (bt.paddingHover.right != null)      pr = bt.paddingHover.right;
+                if (bt.paddingHover.bottom != null)     pb = bt.paddingHover.bottom;
+            }
         }
         else if (Utils.eq(bt.state, ButtonState.PRESS)) { // Нажатие
             if (Utils.noeq(bt.icoPress, null))          ico = bt.icoPress;
             if (Utils.noeq(bt.labelPress, null))        label = bt.labelPress;
-            if (Utils.noeq(bt.paddingPress, null))      p = bt.paddingPress;
+            if (Utils.noeq(bt.paddingPress, null)) {
+                if (bt.paddingPress.top != null)        pt = bt.paddingPress.top;
+                if (bt.paddingPress.left != null)       pl = bt.paddingPress.left;
+                if (bt.paddingPress.right != null)      pr = bt.paddingPress.right;
+                if (bt.paddingPress.bottom != null)     pb = bt.paddingPress.bottom;
+            }
         }
 
         // Позицианирование:
@@ -1051,15 +1093,15 @@ class Button extends Component
                 label.alignY = AlignY.CENTER;
                 label.autosize = true;
                 label.update(true);
-                label.x = Math.round(bt.w - label.w - p.right);
-                label.y = Math.round(p.top + (bt.h - label.h) / 2);
+                label.x = Math.round(bt.w - label.w - pr);
+                label.y = Math.round(pt + (bt.h - label.h) / 2);
                 
-                ico.x = Math.round(p.left);
-                ico.y = Math.round(p.top + (bt.h - ico.height) / 2);
+                ico.x = Math.round(pl);
+                ico.y = Math.round(pt + (bt.h - ico.height) / 2);
             }
             else {
-                ico.x = Math.round(p.left);
-                ico.y = Math.round(p.top + (bt.h - ico.height) / 2);
+                ico.x = Math.round(pl);
+                ico.y = Math.round(pt + (bt.h - ico.height) / 2);
             }
         }
         else {
@@ -1068,8 +1110,8 @@ class Button extends Component
                 label.alignY = AlignY.CENTER;
                 label.autosize = true;
                 label.update(true);
-                label.x = Math.round(bt.w - label.w - p.right);
-                label.y = Math.round(p.top + (bt.h - label.h) / 2);
+                label.x = Math.round(bt.w - label.w - pr);
+                label.y = Math.round(pt + (bt.h - label.h) / 2);
             }
         }
     }
@@ -1095,23 +1137,47 @@ class Button extends Component
         // Параметры:
         var ico = bt.ico;
         var label = bt.label;
-        var p = Utils.eq(bt.padding, null)?PADDING:bt.padding;
+        var pt:Float = 0;
+        var pr:Float = 0;
+        var pl:Float = 0;
+        var pb:Float = 0;
+        if (bt.padding != null) {
+            if (bt.padding.top != null)     pt = bt.padding.top;
+            if (bt.padding.left != null)    pl = bt.padding.left;
+            if (bt.padding.right != null)   pr = bt.padding.right;
+            if (bt.padding.bottom != null)  pb = bt.padding.bottom;
+        }
 
         // Состояние:
         if (!bt.enabled) { // Выключено
             if (Utils.noeq(bt.icoDisable, null))        ico = bt.icoDisable;
             if (Utils.noeq(bt.labelDisable, null))      label = bt.labelDisable;
-            if (Utils.noeq(bt.paddingDisable, null))    p = bt.paddingDisable;
+            if (Utils.noeq(bt.paddingDisable, null)) {
+                if (bt.paddingDisable.top != null)      pt = bt.paddingDisable.top;
+                if (bt.paddingDisable.left != null)     pl = bt.paddingDisable.left;
+                if (bt.paddingDisable.right != null)    pr = bt.paddingDisable.right;
+                if (bt.paddingDisable.bottom != null)   pb = bt.paddingDisable.bottom;
+            }
         }
         else if (Utils.eq(bt.state, ButtonState.HOVER)) { // Наведение
             if (Utils.noeq(bt.icoHover, null))          ico = bt.icoHover;
             if (Utils.noeq(bt.labelHover, null))        label = bt.labelHover;
-            if (Utils.noeq(bt.paddingHover, null))      p = bt.paddingHover;
+            if (Utils.noeq(bt.paddingHover, null)) {
+                if (bt.paddingHover.top != null)        pt = bt.paddingHover.top;
+                if (bt.paddingHover.left != null)       pl = bt.paddingHover.left;
+                if (bt.paddingHover.right != null)      pr = bt.paddingHover.right;
+                if (bt.paddingHover.bottom != null)     pb = bt.paddingHover.bottom;
+            }
         }
         else if (Utils.eq(bt.state, ButtonState.PRESS)) { // Нажатие
             if (Utils.noeq(bt.icoPress, null))          ico = bt.icoPress;
             if (Utils.noeq(bt.labelPress, null))        label = bt.labelPress;
-            if (Utils.noeq(bt.paddingPress, null))      p = bt.paddingPress;
+            if (Utils.noeq(bt.paddingPress, null)) {
+                if (bt.paddingPress.top != null)        pt = bt.paddingPress.top;
+                if (bt.paddingPress.left != null)       pl = bt.paddingPress.left;
+                if (bt.paddingPress.right != null)      pr = bt.paddingPress.right;
+                if (bt.paddingPress.bottom != null)     pb = bt.paddingPress.bottom;
+            }
         }
 
         // Позицианирование:
@@ -1121,15 +1187,15 @@ class Button extends Component
                 label.alignY = AlignY.BOTTOM;
                 label.autosize = true;
                 label.update(true);
-                label.x = Math.round(bt.w - label.w - p.right);
-                label.y = Math.round(bt.h - label.h - p.bottom);
+                label.x = Math.round(bt.w - label.w - pr);
+                label.y = Math.round(bt.h - label.h - pb);
                 
-                ico.x = Math.round(p.left);
-                ico.y = Math.round(bt.h - ico.height - p.bottom);
+                ico.x = Math.round(pl);
+                ico.y = Math.round(bt.h - ico.height - pb);
             }
             else {
-                ico.x = Math.round(p.left);
-                ico.y = Math.round(bt.h - ico.height - p.bottom);
+                ico.x = Math.round(pl);
+                ico.y = Math.round(bt.h - ico.height - pb);
             }
         }
         else {
@@ -1138,8 +1204,8 @@ class Button extends Component
                 label.alignY = AlignY.BOTTOM;
                 label.autosize = true;
                 label.update(true);
-                label.x = Math.round(bt.w - label.w - p.right);
-                label.y = Math.round(bt.h - label.h - p.bottom);
+                label.x = Math.round(bt.w - label.w - pr);
+                label.y = Math.round(bt.h - label.h - pb);
             }
         }
     }
@@ -1165,23 +1231,47 @@ class Button extends Component
         // Параметры:
         var ico = bt.ico;
         var label = bt.label;
-        var p = Utils.eq(bt.padding, null)?PADDING:bt.padding;
+        var pt:Float = 0;
+        var pr:Float = 0;
+        var pl:Float = 0;
+        var pb:Float = 0;
+        if (bt.padding != null) {
+            if (bt.padding.top != null)     pt = bt.padding.top;
+            if (bt.padding.left != null)    pl = bt.padding.left;
+            if (bt.padding.right != null)   pr = bt.padding.right;
+            if (bt.padding.bottom != null)  pb = bt.padding.bottom;
+        }
 
         // Состояние:
         if (!bt.enabled) { // Выключено
             if (Utils.noeq(bt.icoDisable, null))        ico = bt.icoDisable;
             if (Utils.noeq(bt.labelDisable, null))      label = bt.labelDisable;
-            if (Utils.noeq(bt.paddingDisable, null))    p = bt.paddingDisable;
+            if (Utils.noeq(bt.paddingDisable, null)) {
+                if (bt.paddingDisable.top != null)      pt = bt.paddingDisable.top;
+                if (bt.paddingDisable.left != null)     pl = bt.paddingDisable.left;
+                if (bt.paddingDisable.right != null)    pr = bt.paddingDisable.right;
+                if (bt.paddingDisable.bottom != null)   pb = bt.paddingDisable.bottom;
+            }
         }
         else if (Utils.eq(bt.state, ButtonState.HOVER)) { // Наведение
             if (Utils.noeq(bt.icoHover, null))          ico = bt.icoHover;
             if (Utils.noeq(bt.labelHover, null))        label = bt.labelHover;
-            if (Utils.noeq(bt.paddingHover, null))      p = bt.paddingHover;
+            if (Utils.noeq(bt.paddingHover, null)) {
+                if (bt.paddingHover.top != null)        pt = bt.paddingHover.top;
+                if (bt.paddingHover.left != null)       pl = bt.paddingHover.left;
+                if (bt.paddingHover.right != null)      pr = bt.paddingHover.right;
+                if (bt.paddingHover.bottom != null)     pb = bt.paddingHover.bottom;
+            }
         }
         else if (Utils.eq(bt.state, ButtonState.PRESS)) { // Нажатие
             if (Utils.noeq(bt.icoPress, null))          ico = bt.icoPress;
             if (Utils.noeq(bt.labelPress, null))        label = bt.labelPress;
-            if (Utils.noeq(bt.paddingPress, null))      p = bt.paddingPress;
+            if (Utils.noeq(bt.paddingPress, null)) {
+                if (bt.paddingPress.top != null)        pt = bt.paddingPress.top;
+                if (bt.paddingPress.left != null)       pl = bt.paddingPress.left;
+                if (bt.paddingPress.right != null)      pr = bt.paddingPress.right;
+                if (bt.paddingPress.bottom != null)     pb = bt.paddingPress.bottom;
+            }
         }
 
         // Позицианирование:
@@ -1191,15 +1281,15 @@ class Button extends Component
                 label.alignY = AlignY.TOP;
                 label.autosize = true;
                 label.update(true);
-                label.x = Math.round(p.left);
-                label.y = Math.round(p.top);
+                label.x = Math.round(pl);
+                label.y = Math.round(pt);
                 
-                ico.x = Math.round(bt.w - ico.width - p.right);
-                ico.y = Math.round(p.top);
+                ico.x = Math.round(bt.w - ico.width - pr);
+                ico.y = Math.round(pt);
             }
             else {
-                ico.x = Math.round(bt.w - ico.width - p.right);
-                ico.y = Math.round(p.top);
+                ico.x = Math.round(bt.w - ico.width - pr);
+                ico.y = Math.round(pt);
             }
         }
         else {
@@ -1208,8 +1298,8 @@ class Button extends Component
                 label.alignY = AlignY.TOP;
                 label.autosize = true;
                 label.update(true);
-                label.x = Math.round(p.left);
-                label.y = Math.round(p.top);
+                label.x = Math.round(pl);
+                label.y = Math.round(pt);
             }
         }
     }
@@ -1235,23 +1325,47 @@ class Button extends Component
         // Параметры:
         var ico = bt.ico;
         var label = bt.label;
-        var p = Utils.eq(bt.padding, null)?PADDING:bt.padding;
+        var pt:Float = 0;
+        var pr:Float = 0;
+        var pl:Float = 0;
+        var pb:Float = 0;
+        if (bt.padding != null) {
+            if (bt.padding.top != null)     pt = bt.padding.top;
+            if (bt.padding.left != null)    pl = bt.padding.left;
+            if (bt.padding.right != null)   pr = bt.padding.right;
+            if (bt.padding.bottom != null)  pb = bt.padding.bottom;
+        }
 
         // Состояние:
         if (!bt.enabled) { // Выключено
             if (Utils.noeq(bt.icoDisable, null))        ico = bt.icoDisable;
             if (Utils.noeq(bt.labelDisable, null))      label = bt.labelDisable;
-            if (Utils.noeq(bt.paddingDisable, null))    p = bt.paddingDisable;
+            if (Utils.noeq(bt.paddingDisable, null)) {
+                if (bt.paddingDisable.top != null)      pt = bt.paddingDisable.top;
+                if (bt.paddingDisable.left != null)     pl = bt.paddingDisable.left;
+                if (bt.paddingDisable.right != null)    pr = bt.paddingDisable.right;
+                if (bt.paddingDisable.bottom != null)   pb = bt.paddingDisable.bottom;
+            }
         }
         else if (Utils.eq(bt.state, ButtonState.HOVER)) { // Наведение
             if (Utils.noeq(bt.icoHover, null))          ico = bt.icoHover;
             if (Utils.noeq(bt.labelHover, null))        label = bt.labelHover;
-            if (Utils.noeq(bt.paddingHover, null))      p = bt.paddingHover;
+            if (Utils.noeq(bt.paddingHover, null)) {
+                if (bt.paddingHover.top != null)        pt = bt.paddingHover.top;
+                if (bt.paddingHover.left != null)       pl = bt.paddingHover.left;
+                if (bt.paddingHover.right != null)      pr = bt.paddingHover.right;
+                if (bt.paddingHover.bottom != null)     pb = bt.paddingHover.bottom;
+            }
         }
         else if (Utils.eq(bt.state, ButtonState.PRESS)) { // Нажатие
             if (Utils.noeq(bt.icoPress, null))          ico = bt.icoPress;
             if (Utils.noeq(bt.labelPress, null))        label = bt.labelPress;
-            if (Utils.noeq(bt.paddingPress, null))      p = bt.paddingPress;
+            if (Utils.noeq(bt.paddingPress, null)) {
+                if (bt.paddingPress.top != null)        pt = bt.paddingPress.top;
+                if (bt.paddingPress.left != null)       pl = bt.paddingPress.left;
+                if (bt.paddingPress.right != null)      pr = bt.paddingPress.right;
+                if (bt.paddingPress.bottom != null)     pb = bt.paddingPress.bottom;
+            }
         }
 
         // Позицианирование:
@@ -1261,15 +1375,15 @@ class Button extends Component
                 label.alignY = AlignY.CENTER;
                 label.autosize = true;
                 label.update(true);
-                label.x = Math.round(p.left);
-                label.y = Math.round(p.top + (bt.h - label.h) / 2);
+                label.x = Math.round(pl);
+                label.y = Math.round(pt + (bt.h - label.h) / 2);
                 
-                ico.x = Math.round(bt.w - ico.width - p.right);
-                ico.y = Math.round(p.top + (bt.h - ico.height) / 2);
+                ico.x = Math.round(bt.w - ico.width - pr);
+                ico.y = Math.round(pt + (bt.h - ico.height) / 2);
             }
             else {
-                ico.x = Math.round(bt.w - ico.width - p.right);
-                ico.y = Math.round(p.top + (bt.h - ico.height) / 2);
+                ico.x = Math.round(bt.w - ico.width - pr);
+                ico.y = Math.round(pt + (bt.h - ico.height) / 2);
             }
         }
         else {
@@ -1278,8 +1392,8 @@ class Button extends Component
                 label.alignY = AlignY.CENTER;
                 label.autosize = true;
                 label.update(true);
-                label.x = Math.round(p.left);
-                label.y = Math.round(p.top + (bt.h - label.h) / 2);
+                label.x = Math.round(pl);
+                label.y = Math.round(pt + (bt.h - label.h) / 2);
             }
         }
     }
@@ -1305,23 +1419,47 @@ class Button extends Component
         // Параметры:
         var ico = bt.ico;
         var label = bt.label;
-        var p = Utils.eq(bt.padding, null)?PADDING:bt.padding;
+        var pt:Float = 0;
+        var pr:Float = 0;
+        var pl:Float = 0;
+        var pb:Float = 0;
+        if (bt.padding != null) {
+            if (bt.padding.top != null)     pt = bt.padding.top;
+            if (bt.padding.left != null)    pl = bt.padding.left;
+            if (bt.padding.right != null)   pr = bt.padding.right;
+            if (bt.padding.bottom != null)  pb = bt.padding.bottom;
+        }
 
         // Состояние:
         if (!bt.enabled) { // Выключено
             if (Utils.noeq(bt.icoDisable, null))        ico = bt.icoDisable;
             if (Utils.noeq(bt.labelDisable, null))      label = bt.labelDisable;
-            if (Utils.noeq(bt.paddingDisable, null))    p = bt.paddingDisable;
+            if (Utils.noeq(bt.paddingDisable, null)) {
+                if (bt.paddingDisable.top != null)      pt = bt.paddingDisable.top;
+                if (bt.paddingDisable.left != null)     pl = bt.paddingDisable.left;
+                if (bt.paddingDisable.right != null)    pr = bt.paddingDisable.right;
+                if (bt.paddingDisable.bottom != null)   pb = bt.paddingDisable.bottom;
+            }
         }
         else if (Utils.eq(bt.state, ButtonState.HOVER)) { // Наведение
             if (Utils.noeq(bt.icoHover, null))          ico = bt.icoHover;
             if (Utils.noeq(bt.labelHover, null))        label = bt.labelHover;
-            if (Utils.noeq(bt.paddingHover, null))      p = bt.paddingHover;
+            if (Utils.noeq(bt.paddingHover, null)) {
+                if (bt.paddingHover.top != null)        pt = bt.paddingHover.top;
+                if (bt.paddingHover.left != null)       pl = bt.paddingHover.left;
+                if (bt.paddingHover.right != null)      pr = bt.paddingHover.right;
+                if (bt.paddingHover.bottom != null)     pb = bt.paddingHover.bottom;
+            }
         }
         else if (Utils.eq(bt.state, ButtonState.PRESS)) { // Нажатие
             if (Utils.noeq(bt.icoPress, null))          ico = bt.icoPress;
             if (Utils.noeq(bt.labelPress, null))        label = bt.labelPress;
-            if (Utils.noeq(bt.paddingPress, null))      p = bt.paddingPress;
+            if (Utils.noeq(bt.paddingPress, null)) {
+                if (bt.paddingPress.top != null)        pt = bt.paddingPress.top;
+                if (bt.paddingPress.left != null)       pl = bt.paddingPress.left;
+                if (bt.paddingPress.right != null)      pr = bt.paddingPress.right;
+                if (bt.paddingPress.bottom != null)     pb = bt.paddingPress.bottom;
+            }
         }
 
         // Позицианирование:
@@ -1331,15 +1469,15 @@ class Button extends Component
                 label.alignY = AlignY.BOTTOM;
                 label.autosize = true;
                 label.update(true);
-                label.x = Math.round(p.left);
-                label.y = Math.round(bt.h - label.h - p.bottom);
+                label.x = Math.round(pl);
+                label.y = Math.round(bt.h - label.h - pb);
                 
-                ico.x = Math.round(bt.w - ico.width - p.right);
-                ico.y = Math.round(bt.h - ico.height - p.bottom);
+                ico.x = Math.round(bt.w - ico.width - pr);
+                ico.y = Math.round(bt.h - ico.height - pb);
             }
             else {
-                ico.x = Math.round(bt.w - ico.width - p.right);
-                ico.y = Math.round(bt.h - ico.height - p.bottom);
+                ico.x = Math.round(bt.w - ico.width - pr);
+                ico.y = Math.round(bt.h - ico.height - pb);
             }
         }
         else {
@@ -1348,8 +1486,8 @@ class Button extends Component
                 label.alignY = AlignY.BOTTOM;
                 label.autosize = true;
                 label.update(true);
-                label.x = Math.round(p.left);
-                label.y = Math.round(bt.h - label.h - p.bottom);
+                label.x = Math.round(pl);
+                label.y = Math.round(bt.h - label.h - pb);
             }
         }
     }
@@ -1375,23 +1513,47 @@ class Button extends Component
         // Параметры:
         var ico = bt.ico;
         var label = bt.label;
-        var p = Utils.eq(bt.padding, null)?PADDING:bt.padding;
+        var pt:Float = 0;
+        var pr:Float = 0;
+        var pl:Float = 0;
+        var pb:Float = 0;
+        if (bt.padding != null) {
+            if (bt.padding.top != null)     pt = bt.padding.top;
+            if (bt.padding.left != null)    pl = bt.padding.left;
+            if (bt.padding.right != null)   pr = bt.padding.right;
+            if (bt.padding.bottom != null)  pb = bt.padding.bottom;
+        }
 
         // Состояние:
         if (!bt.enabled) { // Выключено
             if (Utils.noeq(bt.icoDisable, null))        ico = bt.icoDisable;
             if (Utils.noeq(bt.labelDisable, null))      label = bt.labelDisable;
-            if (Utils.noeq(bt.paddingDisable, null))    p = bt.paddingDisable;
+            if (Utils.noeq(bt.paddingDisable, null)) {
+                if (bt.paddingDisable.top != null)      pt = bt.paddingDisable.top;
+                if (bt.paddingDisable.left != null)     pl = bt.paddingDisable.left;
+                if (bt.paddingDisable.right != null)    pr = bt.paddingDisable.right;
+                if (bt.paddingDisable.bottom != null)   pb = bt.paddingDisable.bottom;
+            }
         }
         else if (Utils.eq(bt.state, ButtonState.HOVER)) { // Наведение
             if (Utils.noeq(bt.icoHover, null))          ico = bt.icoHover;
             if (Utils.noeq(bt.labelHover, null))        label = bt.labelHover;
-            if (Utils.noeq(bt.paddingHover, null))      p = bt.paddingHover;
+            if (Utils.noeq(bt.paddingHover, null)) {
+                if (bt.paddingHover.top != null)        pt = bt.paddingHover.top;
+                if (bt.paddingHover.left != null)       pl = bt.paddingHover.left;
+                if (bt.paddingHover.right != null)      pr = bt.paddingHover.right;
+                if (bt.paddingHover.bottom != null)     pb = bt.paddingHover.bottom;
+            }
         }
         else if (Utils.eq(bt.state, ButtonState.PRESS)) { // Нажатие
             if (Utils.noeq(bt.icoPress, null))          ico = bt.icoPress;
             if (Utils.noeq(bt.labelPress, null))        label = bt.labelPress;
-            if (Utils.noeq(bt.paddingPress, null))      p = bt.paddingPress;
+            if (Utils.noeq(bt.paddingPress, null)) {
+                if (bt.paddingPress.top != null)        pt = bt.paddingPress.top;
+                if (bt.paddingPress.left != null)       pl = bt.paddingPress.left;
+                if (bt.paddingPress.right != null)      pr = bt.paddingPress.right;
+                if (bt.paddingPress.bottom != null)     pb = bt.paddingPress.bottom;
+            }
         }
 
         // Позицианирование:
@@ -1401,15 +1563,15 @@ class Button extends Component
                 label.alignY = AlignY.TOP;
                 label.autosize = true;
                 label.update(true);
-                label.x = Math.round(p.left + bt.icoGap + ico.width + (bt.w - label.w - bt.icoGap - ico.width) / 2);
-                label.y = Math.round(p.top);
+                label.x = Math.round(pl + bt.icoGap + ico.width + (bt.w - label.w - bt.icoGap - ico.width) / 2);
+                label.y = Math.round(pt);
                 
                 ico.x = Math.round(label.x - bt.icoGap - ico.width);
-                ico.y = Math.round(p.top);
+                ico.y = Math.round(pt);
             }
             else {
-                ico.x = Math.round(p.left + (bt.w - ico.width) / 2);
-                ico.y = Math.round(p.top);
+                ico.x = Math.round(pl + (bt.w - ico.width) / 2);
+                ico.y = Math.round(pt);
             }
         }
         else {
@@ -1418,8 +1580,8 @@ class Button extends Component
                 label.alignY = AlignY.TOP;
                 label.autosize = true;
                 label.update(true);
-                label.x = Math.round(p.left + (bt.w - label.w) / 2);
-                label.y = Math.round(p.top);
+                label.x = Math.round(pl + (bt.w - label.w) / 2);
+                label.y = Math.round(pt);
             }
         }
     }
@@ -1445,25 +1607,49 @@ class Button extends Component
         // Параметры:
         var ico = bt.ico;
         var label = bt.label;
-        var p = Utils.eq(bt.padding, null)?PADDING:bt.padding;
+        var pt:Float = 0;
+        var pr:Float = 0;
+        var pl:Float = 0;
+        var pb:Float = 0;
+        if (bt.padding != null) {
+            if (bt.padding.top != null)     pt = bt.padding.top;
+            if (bt.padding.left != null)    pl = bt.padding.left;
+            if (bt.padding.right != null)   pr = bt.padding.right;
+            if (bt.padding.bottom != null)  pb = bt.padding.bottom;
+        }
 
         // Состояние:
         if (!bt.enabled) { // Выключено
             if (Utils.noeq(bt.icoDisable, null))        ico = bt.icoDisable;
             if (Utils.noeq(bt.labelDisable, null))      label = bt.labelDisable;
-            if (Utils.noeq(bt.paddingDisable, null))    p = bt.paddingDisable;
+            if (Utils.noeq(bt.paddingDisable, null)) {
+                if (bt.paddingDisable.top != null)      pt = bt.paddingDisable.top;
+                if (bt.paddingDisable.left != null)     pl = bt.paddingDisable.left;
+                if (bt.paddingDisable.right != null)    pr = bt.paddingDisable.right;
+                if (bt.paddingDisable.bottom != null)   pb = bt.paddingDisable.bottom;
+            }
         }
         else if (Utils.eq(bt.state, ButtonState.HOVER)) { // Наведение
             if (Utils.noeq(bt.icoHover, null))          ico = bt.icoHover;
             if (Utils.noeq(bt.labelHover, null))        label = bt.labelHover;
-            if (Utils.noeq(bt.paddingHover, null))      p = bt.paddingHover;
+            if (Utils.noeq(bt.paddingHover, null)) {
+                if (bt.paddingHover.top != null)        pt = bt.paddingHover.top;
+                if (bt.paddingHover.left != null)       pl = bt.paddingHover.left;
+                if (bt.paddingHover.right != null)      pr = bt.paddingHover.right;
+                if (bt.paddingHover.bottom != null)     pb = bt.paddingHover.bottom;
+            }
         }
         else if (Utils.eq(bt.state, ButtonState.PRESS)) { // Нажатие
             if (Utils.noeq(bt.icoPress, null))          ico = bt.icoPress;
             if (Utils.noeq(bt.labelPress, null))        label = bt.labelPress;
-            if (Utils.noeq(bt.paddingPress, null))      p = bt.paddingPress;
+            if (Utils.noeq(bt.paddingPress, null)) {
+                if (bt.paddingPress.top != null)        pt = bt.paddingPress.top;
+                if (bt.paddingPress.left != null)       pl = bt.paddingPress.left;
+                if (bt.paddingPress.right != null)      pr = bt.paddingPress.right;
+                if (bt.paddingPress.bottom != null)     pb = bt.paddingPress.bottom;
+            }
         }
-
+        
         // Позицианирование:
         if (Utils.noeq(ico, null)) {
             if (Utils.noeq(label, null)) {
@@ -1471,15 +1657,15 @@ class Button extends Component
                 label.alignY = AlignY.CENTER;
                 label.autosize = true;
                 label.update(true);
-                label.x = Math.round(p.left + bt.icoGap + ico.width + (bt.w - label.w - bt.icoGap - ico.width) / 2);
-                label.y = Math.round(p.top + (bt.h - label.h) / 2);
+                label.x = Math.round(pl + bt.icoGap + ico.width + (bt.w - label.w - bt.icoGap - ico.width) / 2);
+                label.y = Math.round(pt + (bt.h - label.h) / 2);
                 
                 ico.x = Math.round(label.x - bt.icoGap - ico.width);
-                ico.y = Math.round(p.top + (bt.h - ico.height) / 2);
+                ico.y = Math.round(pt + (bt.h - ico.height) / 2);
             }
             else {
-                ico.x = Math.round(p.left + (bt.w - ico.width) / 2);
-                ico.y = Math.round(p.top + (bt.h - ico.height) / 2);
+                ico.x = Math.round(pl + (bt.w - ico.width) / 2);
+                ico.y = Math.round(pt + (bt.h - ico.height) / 2);
             }
         }
         else {
@@ -1488,8 +1674,8 @@ class Button extends Component
                 label.alignY = AlignY.CENTER;
                 label.autosize = true;
                 label.update(true);
-                label.x = Math.round(p.left + (bt.w - label.w) / 2);
-                label.y = Math.round(p.top + (bt.h - label.h) / 2);
+                label.x = Math.round(pl + (bt.w - label.w) / 2);
+                label.y = Math.round(pt + (bt.h - label.h) / 2);
             }
         }
     }
@@ -1515,23 +1701,47 @@ class Button extends Component
         // Параметры:
         var ico = bt.ico;
         var label = bt.label;
-        var p = Utils.eq(bt.padding, null)?PADDING:bt.padding;
+        var pt:Float = 0;
+        var pr:Float = 0;
+        var pl:Float = 0;
+        var pb:Float = 0;
+        if (bt.padding != null) {
+            if (bt.padding.top != null)     pt = bt.padding.top;
+            if (bt.padding.left != null)    pl = bt.padding.left;
+            if (bt.padding.right != null)   pr = bt.padding.right;
+            if (bt.padding.bottom != null)  pb = bt.padding.bottom;
+        }
 
         // Состояние:
         if (!bt.enabled) { // Выключено
             if (Utils.noeq(bt.icoDisable, null))        ico = bt.icoDisable;
             if (Utils.noeq(bt.labelDisable, null))      label = bt.labelDisable;
-            if (Utils.noeq(bt.paddingDisable, null))    p = bt.paddingDisable;
+            if (Utils.noeq(bt.paddingDisable, null)) {
+                if (bt.paddingDisable.top != null)      pt = bt.paddingDisable.top;
+                if (bt.paddingDisable.left != null)     pl = bt.paddingDisable.left;
+                if (bt.paddingDisable.right != null)    pr = bt.paddingDisable.right;
+                if (bt.paddingDisable.bottom != null)   pb = bt.paddingDisable.bottom;
+            }
         }
         else if (Utils.eq(bt.state, ButtonState.HOVER)) { // Наведение
             if (Utils.noeq(bt.icoHover, null))          ico = bt.icoHover;
             if (Utils.noeq(bt.labelHover, null))        label = bt.labelHover;
-            if (Utils.noeq(bt.paddingHover, null))      p = bt.paddingHover;
+            if (Utils.noeq(bt.paddingHover, null)) {
+                if (bt.paddingHover.top != null)        pt = bt.paddingHover.top;
+                if (bt.paddingHover.left != null)       pl = bt.paddingHover.left;
+                if (bt.paddingHover.right != null)      pr = bt.paddingHover.right;
+                if (bt.paddingHover.bottom != null)     pb = bt.paddingHover.bottom;
+            }
         }
         else if (Utils.eq(bt.state, ButtonState.PRESS)) { // Нажатие
             if (Utils.noeq(bt.icoPress, null))          ico = bt.icoPress;
             if (Utils.noeq(bt.labelPress, null))        label = bt.labelPress;
-            if (Utils.noeq(bt.paddingPress, null))      p = bt.paddingPress;
+            if (Utils.noeq(bt.paddingPress, null)) {
+                if (bt.paddingPress.top != null)        pt = bt.paddingPress.top;
+                if (bt.paddingPress.left != null)       pl = bt.paddingPress.left;
+                if (bt.paddingPress.right != null)      pr = bt.paddingPress.right;
+                if (bt.paddingPress.bottom != null)     pb = bt.paddingPress.bottom;
+            }
         }
 
         // Позицианирование:
@@ -1541,15 +1751,15 @@ class Button extends Component
                 label.alignY = AlignY.BOTTOM;
                 label.autosize = true;
                 label.update(true);
-                label.x = Math.round(p.left + bt.icoGap + ico.width + (bt.w - label.w - bt.icoGap - ico.width) / 2);
-                label.y = Math.round(bt.h - label.h - p.bottom);
+                label.x = Math.round(pl + bt.icoGap + ico.width + (bt.w - label.w - bt.icoGap - ico.width) / 2);
+                label.y = Math.round(bt.h - label.h - pb);
                 
                 ico.x = Math.round(label.x - bt.icoGap - ico.width);
-                ico.y = Math.round(bt.h - ico.height - p.bottom);
+                ico.y = Math.round(bt.h - ico.height - pb);
             }
             else {
-                ico.x = Math.round(p.left + (bt.w - ico.width) / 2);
-                ico.y = Math.round(bt.h - ico.height - p.bottom);
+                ico.x = Math.round(pl + (bt.w - ico.width) / 2);
+                ico.y = Math.round(bt.h - ico.height - pb);
             }
         }
         else {
@@ -1558,8 +1768,8 @@ class Button extends Component
                 label.alignY = AlignY.BOTTOM;
                 label.autosize = true;
                 label.update(true);
-                label.x = Math.round(p.left + (bt.w - label.w) / 2);
-                label.y = Math.round(bt.h - label.h - p.bottom);
+                label.x = Math.round(pl + (bt.w - label.w) / 2);
+                label.y = Math.round(bt.h - label.h - pb);
             }
         }
     }

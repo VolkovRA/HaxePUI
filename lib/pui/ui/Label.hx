@@ -345,22 +345,21 @@ class Label extends Component
         var pb:Float = 0;
 
         if (Utils.noeq(label.padding, null)) {
-            pt = label.padding.top;
-            pl = label.padding.left;
-            pr = label.padding.right;
-            pb = label.padding.bottom;
+            if (label.padding.top != null)      pt = label.padding.top;
+            if (label.padding.left != null)     pl = label.padding.left;
+            if (label.padding.left != null)     pr = label.padding.left;
+            if (label.padding.bottom != null)   pb = label.padding.bottom;
         }
 
         var pt2 = pt;
         var pl2 = pl;
         var pr2 = pr;
         var pb2 = pb;
-
         if (Utils.noeq(label.paddingDisable, null)) {
-            pt2 = label.paddingDisable.top;
-            pl2 = label.paddingDisable.left;
-            pr2 = label.paddingDisable.right;
-            pb2 = label.paddingDisable.bottom;
+            if (label.paddingDisable.top != null)      pt2 = label.paddingDisable.top;
+            if (label.paddingDisable.left != null)     pl2 = label.paddingDisable.left;
+            if (label.paddingDisable.left != null)     pr2 = label.paddingDisable.left;
+            if (label.paddingDisable.bottom != null)   pb2 = label.paddingDisable.bottom;
         }
 
         // Общие стили текста:
