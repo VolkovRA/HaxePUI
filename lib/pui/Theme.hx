@@ -7,6 +7,7 @@ import pui.ui.Button;
 import pui.ui.Label;
 import pui.ui.Component;
 import pui.ui.ScrollBar;
+import pui.ui.ProgressBar;
 import pui.ui.Scroller;
 import pui.ui.List;
 import pui.ui.ListItem;
@@ -519,6 +520,7 @@ class Theme extends EventEmitter
         if (Utils.eq(component.componentType, Label.TYPE))              unknownStyleLabel(untyped component);
         else if (Utils.eq(component.componentType, Button.TYPE))        unknownStyleButton(untyped component);
         else if (Utils.eq(component.componentType, ScrollBar.TYPE))     unknownStyleScrollBar(untyped component);
+        else if (Utils.eq(component.componentType, ProgressBar.TYPE))   unknownStyleProgressBar(untyped component);
         else if (Utils.eq(component.componentType, Scroller.TYPE))      unknownStyleScroller(untyped component);
         else if (Utils.eq(component.componentType, List.TYPE))          unknownStyleList(untyped component);
         else if (Utils.eq(component.componentType, ListItem.TYPE))      unknownStyleListItem(untyped component);
@@ -609,6 +611,38 @@ class Theme extends EventEmitter
                 if (Utils.eq(scroll.w, 0))          scroll.w = 17;
                 if (Utils.eq(scroll.h, 0))          scroll.h = 140;
             }
+        }
+    }
+
+    /**
+     * Дефолтное оформление `ProgressBar`.
+     * Используется для подкраски компонентов, стиль которых не задан.
+     * @param scroller Скроллер.
+     */
+    public function unknownStyleProgressBar(pr:ProgressBar):Void {
+        if (Utils.eq(pr.skinBg, null)) {
+            var bg = new Graphics();
+            bg.beginFill(COLOR_GRAY_DARK);
+            bg.drawRect(0, 0, 10, 10);
+            pr.skinBg = bg;
+        };
+        if (Utils.eq(pr.skinFill, null)) {
+            var bg = new Graphics();
+            bg.beginFill(0xFFFFFF);
+            bg.drawRect(0, 0, 10, 10);
+            pr.skinFill = bg;
+        };
+
+        if (pr.padding == null)
+            pr.padding = { top:2, left:2, right:2, bottom:2 };
+
+        if (Utils.eq(pr.orientation, Orientation.VERTICAL)) {
+            if (pr.w == 0) pr.w = 18;
+            if (pr.h == 0) pr.h = 100;
+        }
+        else {
+            if (pr.w == 0) pr.w = 100;
+            if (pr.h == 0) pr.h = 18;
         }
     }
 

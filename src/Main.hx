@@ -49,6 +49,9 @@ class Main
     private static var list1:List;
     private static var listTitle2:Label;
     private static var list2:List;
+    private static var progressTitle:Label;
+    private static var progress1:ProgressBar;
+    private static var progress2:ProgressBar;
 
     /**
      * Точка входа.
@@ -225,11 +228,42 @@ class Main
         list2.overflowY = Overflow.AUTO;
         rndNames(list2, 50);
         app.stage.addChild(list2);
+
+        // Прогрессбар:
+        progressTitle = new Label("ProgressBar");
+        progressTitle.x = 20;
+        progressTitle.y = 450;
+        app.stage.addChild(progressTitle);
+
+        progress1 = new ProgressBar();
+        progress1.x = progressTitle.x;
+        progress1.y = progressTitle.y + 30;
+        app.stage.addChild(progress1);
+
+        progress2 = new ProgressBar();
+        progress2.x = progress1.x;
+        progress2.y = progress1.y + 30;
+        progress2.orientation = Orientation.VERTICAL;
+        progress2.h = 60;
+        app.stage.addChild(progress2);
+
+        Browser.window.setInterval(function(){
+            if (progress1.value == progress1.max)
+                progress1.value = progress1.min;
+            else
+                progress1.value += 0.05;
+
+            if (progress2.value == progress2.max)
+                progress2.value = progress2.min;
+            else
+                progress2.value += 0.015;
+        }, 33);
+
     }
 
     static private function onThemeUpdateFinish(e:ThemeEvent):Void {
-        if (e.updates > 0)
-            trace("UI Updates: " + e.updates + ", total components: " + (Component.nextID-1));
+        //if (e.updates > 0)
+        //    trace("UI Updates: " + e.updates + ", total components: " + (Component.nextID-1));
     }
 
     static private function addCircles(container:Container):Void {
