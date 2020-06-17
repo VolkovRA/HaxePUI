@@ -1,5 +1,8 @@
 # Haxe библиотека UI компонентов для PixiJS
 
+![Скриншот](https://github.com/VolkovRA/HaxePUI/blob/master/preview.png)
+[Демо онлайн](https://funnycarrot.ru/demo/pui/ "Посмотреть онлайн демку")
+
 Описание
 ------------------------------
 
