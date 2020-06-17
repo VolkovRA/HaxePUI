@@ -578,46 +578,16 @@ class Button extends Component
      * Выгрузить кнопку.
 	 */
     override function destroy(?options:EitherType<Bool, DestroyOptions>) {
-        if (Utils.noeq(label, null)) {
-            label.destroy(options);
-            Utils.delete(label);
-        }
-        if (Utils.noeq(labelHover, null)) {
-            label.destroy(options);
-            Utils.delete(labelHover);
-        }
-        if (Utils.noeq(labelPress, null)) {
-            label.destroy(options);
-            Utils.delete(labelPress);
-        }
-        if (Utils.noeq(labelDisable, null)) {
-            label.destroy(options);
-            Utils.delete(labelDisable);
-        }
-        if (Utils.noeq(ico, null)) {
-            ico.destroy(options);
-            Utils.delete(ico);
-        } 
-        if (Utils.noeq(icoHover, null)) {
-            icoHover.destroy(options);
-            Utils.delete(icoHover);
-        }
-        if (Utils.noeq(icoPress, null)) {
-            icoPress.destroy(options);
-            Utils.delete(icoPress);
-        }
-        if (Utils.noeq(icoDisable, null)) {
-            icoDisable.destroy(options);
-            Utils.delete(icoDisable);
-        }
-        if (Utils.noeq(skinBgHover, null)) {
-            skinBgHover.destroy(options);
-            Utils.delete(skinBgHover);
-        } 
-        if (Utils.noeq(skinBgPress, null)) {
-            skinBgPress.destroy(options);
-            Utils.delete(skinBgPress);
-        }
+        Utils.destroySkin(label, options);
+        Utils.destroySkin(labelHover, options);
+        Utils.destroySkin(labelPress, options);
+        Utils.destroySkin(labelDisable, options);
+        Utils.destroySkin(ico, options);
+        Utils.destroySkin(icoHover, options);
+        Utils.destroySkin(icoPress, options);
+        Utils.destroySkin(icoDisable, options);
+        Utils.destroySkin(skinBgHover, options);
+        Utils.destroySkin(skinBgPress, options);
 
         if (autopressInterval > 0) {
             Browser.window.clearInterval(autopressInterval);

@@ -262,15 +262,8 @@ class Label extends Component
      * Выгрузить текстовую метку.
 	 */
     override function destroy(?options:EitherType<Bool, DestroyOptions>) {
-        if (Utils.noeq(skinText, null)) {
-            skinText.destroy();
-            Utils.delete(skinText);
-        }
-        if (Utils.noeq(skinBitmapText, null)) {
-            skinBitmapText.destroy();
-            Utils.delete(skinBitmapText);
-        }
-
+        Utils.destroySkin(skinText, options);
+        Utils.destroySkin(skinBitmapText, options);
         Utils.delete(text);
 
         super.destroy(options);

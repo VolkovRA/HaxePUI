@@ -5,6 +5,7 @@ import js.lib.Object;
 import pixi.core.display.Container;
 import pixi.core.display.DisplayObject;
 import pixi.core.graphics.Graphics;
+import haxe.extern.EitherType;
 
 /**
  * Вспомогательные утилиты.
@@ -15,14 +16,13 @@ class Utils
      * Показать ребёнка в родителе.
      * 
      * Сокращённая форма записи добавления ребёнка в родителя.
-     * Используется библиотекой компонентов повсеместно.
      * Генерирует оптимальный JS код и встраивается в точку вызова.
      * 
      * @param parent Родитель. Не должен быть `null`.
      * @param child Ребёнок. Может быть `null`.
      */
     static public inline function show(parent:Container, child:DisplayObject):Void {
-        Syntax.code('if({1} !== null) {0}.addChild({1});', parent, child);
+        Syntax.code('if({1} != null) {0}.addChild({1});', parent, child);
     }
 
     /**
@@ -37,6 +37,17 @@ class Utils
      */
     static public inline function hide(parent:Container, child:DisplayObject):Void {
         Syntax.code('if({1} !== null && {1}.parent === {0}) {0}.removeChild({1});', parent, child);
+    }
+
+    /**
+     * Уничтожить скин компонента.
+     * - Вызывает метод уничтожения скина, если он не `null`.
+     * - Удаляет из компонента указанный скин.
+     * @param skin Удаляемый скин.
+     * @param options Опций вызова метода: `DisplayObject.destroy()`. 
+     */
+    static public inline function destroySkin(skin:Container, ?options:EitherType<Bool,DestroyOptions>):Void {
+        Syntax.code('if ({0} != null){ {0}.destroy({1}); {0} = null; }', skin, options);
     }
 
     /**
@@ -311,7 +322,9 @@ class Utils
     /**
      * Создать обычный JavaScript массив заданной длины.
      * 
-     * По сути является аналогом для использования конструктора: `new Vector(length)`.
+     * По сути, является аналогом для использования конструктора: `new Vector(length)`.
+     * Полезен для разового выделения памяти нужной длины.
+     * 
      * @param length Длина массива.
      * @return Массив.
      */

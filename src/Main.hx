@@ -52,6 +52,10 @@ class Main
     private static var progressTitle:Label;
     private static var progress1:ProgressBar;
     private static var progress2:ProgressBar;
+    private static var checkTitle:Label;
+    private static var check1:CheckBox;
+    private static var check2:CheckBox;
+    private static var check3:CheckBox;
 
     /**
      * Точка входа.
@@ -247,21 +251,42 @@ class Main
         progress2.h = 60;
         app.stage.addChild(progress2);
 
-        Browser.window.setInterval(function(){
-            if (progress1.value == progress1.max)
-                progress1.value = progress1.min;
-            else
-                progress1.value += 0.05;
+        // Чекбокс:
+        checkTitle = new Label("CheckBox");
+        checkTitle.x = 200;
+        checkTitle.y = 450;
+        app.stage.addChild(checkTitle);
 
-            if (progress2.value == progress2.max)
-                progress2.value = progress2.min;
-            else
-                progress2.value += 0.015;
-        }, 33);
+        check1 = new CheckBox();
+        check1.x = checkTitle.x;
+        check1.y = checkTitle.y + 30;
+        check1.value = false;
+        app.stage.addChild(check1);
 
+        check2 = new CheckBox();
+        check2.x = check1.x;
+        check2.y = check1.y + 34;
+        check2.value = true;
+        app.stage.addChild(check2);
+
+        check3 = new CheckBox();
+        check3.x = check2.x;
+        check3.y = check2.y + 34;
+        check3.value = null;
+        app.stage.addChild(check3);
     }
 
     static private function onThemeUpdateFinish(e:ThemeEvent):Void {
+        if (progress1.value == progress1.max)
+            progress1.value = progress1.min;
+        else
+            progress1.value += 0.03;
+
+        if (progress2.value == progress2.max)
+            progress2.value = progress2.min;
+        else
+            progress2.value += 0.005;
+
         //if (e.updates > 0)
         //    trace("UI Updates: " + e.updates + ", total components: " + (Component.nextID-1));
     }

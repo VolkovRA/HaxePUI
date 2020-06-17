@@ -716,26 +716,11 @@ class ScrollBar extends Component
      * Выгрузить скроллбар.
 	 */
     override function destroy(?options:EitherType<Bool, DestroyOptions>) {
-        if (Utils.noeq(incBt, null)) {
-            incBt.destroy(options);
-            Utils.delete(incBt);
-        }
-        if (Utils.noeq(decBt, null)) {
-            decBt.destroy(options);
-            Utils.delete(decBt);
-        }
-        if (Utils.noeq(thumb, null)) {
-            thumb.destroy(options);
-            Utils.delete(thumb);
-        }
-        if (Utils.noeq(skinScroll, null)) {
-            skinScroll.destroy(options);
-            Utils.delete(skinScroll);
-        }
-        if (Utils.noeq(skinScrollDisable, null)) {
-            skinScrollDisable.destroy(options);
-            Utils.delete(skinScrollDisable);
-        }
+        Utils.destroySkin(incBt, options);
+        Utils.destroySkin(decBt, options);
+        Utils.destroySkin(thumb, options);
+        Utils.destroySkin(skinScroll, options);
+        Utils.destroySkin(skinScrollDisable, options);
 
         isDragged = false;
 

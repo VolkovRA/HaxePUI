@@ -212,14 +212,8 @@ class ProgressBar extends Component
      * Выгрузить прогрессбар.
 	 */
     override function destroy(?options:EitherType<Bool, DestroyOptions>) {
-        if (Utils.noeq(skinFill, null)) {
-            skinFill.destroy();
-            Utils.delete(skinFill);
-        }
-        if (Utils.noeq(skinFillDisable, null)) {
-            skinFillDisable.destroy();
-            Utils.delete(skinFillDisable);
-        }
+        Utils.destroySkin(skinFill, options);
+        Utils.destroySkin(skinFillDisable, options);
 
         super.destroy(options);
     }

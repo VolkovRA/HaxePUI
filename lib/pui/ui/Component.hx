@@ -726,18 +726,9 @@ class Component extends Container
      */
     @:keep
     override function destroy(?options:EitherType<Bool, DestroyOptions>) {
-        if (Utils.noeq(skinBg, null)) {
-            skinBg.destroy();
-            Utils.delete(skinBg);
-        }
-        if (Utils.noeq(skinBgDisable, null)) {
-            skinBgDisable.destroy();
-            Utils.delete(skinBgDisable);
-        }
-        if (Utils.noeq(skinDebug, null)) {
-            skinDebug.destroy();
-            Utils.delete(skinDebug);
-        }
+        Utils.destroySkin(skinBg, options);
+        Utils.destroySkin(skinBgDisable, options);
+        Utils.destroySkin(skinDebug, options);
 
         if (inputWheel)
             theme.removeWheelListener(this);

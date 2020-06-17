@@ -8,6 +8,7 @@ import pui.ui.Label;
 import pui.ui.Component;
 import pui.ui.ScrollBar;
 import pui.ui.ProgressBar;
+import pui.ui.CheckBox;
 import pui.ui.Scroller;
 import pui.ui.List;
 import pui.ui.ListItem;
@@ -521,6 +522,7 @@ class Theme extends EventEmitter
         else if (Utils.eq(component.componentType, Button.TYPE))        unknownStyleButton(untyped component);
         else if (Utils.eq(component.componentType, ScrollBar.TYPE))     unknownStyleScrollBar(untyped component);
         else if (Utils.eq(component.componentType, ProgressBar.TYPE))   unknownStyleProgressBar(untyped component);
+        else if (Utils.eq(component.componentType, CheckBox.TYPE))      unknownStyleCheckBox(untyped component);
         else if (Utils.eq(component.componentType, Scroller.TYPE))      unknownStyleScroller(untyped component);
         else if (Utils.eq(component.componentType, List.TYPE))          unknownStyleList(untyped component);
         else if (Utils.eq(component.componentType, ListItem.TYPE))      unknownStyleListItem(untyped component);
@@ -617,7 +619,7 @@ class Theme extends EventEmitter
     /**
      * Дефолтное оформление `ProgressBar`.
      * Используется для подкраски компонентов, стиль которых не задан.
-     * @param scroller Скроллер.
+     * @param pr Прогрессбар.
      */
     public function unknownStyleProgressBar(pr:ProgressBar):Void {
         if (Utils.eq(pr.skinBg, null)) {
@@ -644,6 +646,37 @@ class Theme extends EventEmitter
             if (pr.w == 0) pr.w = 100;
             if (pr.h == 0) pr.h = 18;
         }
+    }
+
+    /**
+     * Дефолтное оформление `CheckBox`.
+     * Используется для подкраски компонентов, стиль которых не задан.
+     * @param cp Компонент.
+     */
+    public function unknownStyleCheckBox(cp:CheckBox):Void {
+        if (Utils.eq(cp.skinBg, null)) {
+            var bg = new Graphics();
+            bg.beginFill(COLOR_GRAY_DARK);
+            bg.drawRect(0, 0, 10, 10);
+            cp.skinBg = bg;
+        };
+        if (Utils.eq(cp.skinIcoChecked, null)) {
+            var ico = new Graphics();
+            ico.lineStyle(2, 0xFFFFFF);
+            ico.moveTo(2,12);
+            ico.lineTo(8, 20-2);
+            ico.lineTo(20,6);
+            cp.skinIcoChecked = ico;
+        };
+        if (Utils.eq(cp.skinIcoUnknown, null)) {
+            var ico = new Graphics();
+            ico.beginFill(0xFFFFFF);
+            ico.drawRect(4, 4, 12, 12);
+            cp.skinIcoUnknown = ico;
+        };
+        
+        if (cp.w == 0) cp.w = 20;
+        if (cp.h == 0) cp.h = 20;
     }
 
     /**
