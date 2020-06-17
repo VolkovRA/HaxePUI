@@ -101,6 +101,18 @@ class CheckBox extends Component
     //////////////////
 
     override function set_enabled(value:Bool):Bool {
+        if (Utils.eq(value, enabled))
+            return value;
+        
+        if (value) {
+            buttonMode = true;
+            interactive = true;
+        }
+        else {
+            buttonMode = false;
+            interactive = false;
+        }
+        
         super.set_enabled(value);
         updateState();
         return value;
@@ -146,7 +158,7 @@ class CheckBox extends Component
      * Изменяется автоматически при взаимодействии пользователя с компонентом.
      * Используется как индикатор для отображения необходимых текстур.
      * 
-     * По умолчанию: `false` (Флажок не установлен)
+     * По умолчанию: `CheckBoxState.FALSE`. (Флажок не установлен)
      * 
      * @event Event.STATE  Посылается в случае изменения состояния.
      */
@@ -818,10 +830,7 @@ class CheckBox extends Component
                 continue;
             
             if (Utils.eq(skin,bg) || Utils.eq(skin,ico)) {
-                if (Utils.eq(skin.parent,c))
-                    continue;
-                else
-                    c.addChild(skin);
+                c.addChild(skin);
             }
             else {
                 if (Utils.eq(skin.parent,c))

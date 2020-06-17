@@ -29,7 +29,8 @@ class Button extends Component
 
     // Приват
     private var history:Dynamic = {};
-    private var downCurrentButton:Bool = false;
+    private var isHover:Bool = false;
+    private var isPress:Bool = false;
     private var autopressTimeout:Int = 0;
     private var autopressInterval:Int = 0;
 
@@ -63,17 +64,13 @@ class Button extends Component
         if (!isActualInput(e))
             return;
 
-        if (downCurrentButton)
-            state = ButtonState.PRESS;
-        else
-            state = ButtonState.HOVER;
+        isHover = true;
+        updateState();
     }
     private function onRollOut(e:InteractionEvent):Void {
         if (!isActualInput(e))
             return;
-
-        state = ButtonState.NORMAL;
-
+        
         // Автонажатие:
         if (autopressInterval > 0) {
             Browser.window.clearInterval(autopressInterval);
@@ -83,6 +80,9 @@ class Button extends Component
             Browser.window.clearTimeout(autopressTimeout);
             autopressTimeout = 0;
         }
+
+        isHover = false;
+        updateState();
     }
     private function onDown(e:InteractionEvent):Void {
         if (!isActualInput(e))
@@ -90,8 +90,8 @@ class Button extends Component
 
         e.stopPropagation();
 
-        downCurrentButton = true;
-        state = ButtonState.PRESS;
+        isPress = true;
+        updateState();
 
         // Автонажатие:
         if (autopress.enabled && autopressInterval == 0 && autopressTimeout == 0) {
@@ -138,8 +138,7 @@ class Button extends Component
         if (!isActualInput(e))
             return;
         
-        downCurrentButton = false;
-        state = ButtonState.HOVER;
+        isPress = false;
 
         // Автонажатие:
         if (autopressInterval > 0) {
@@ -151,13 +150,14 @@ class Button extends Component
             autopressTimeout = 0;
         }
         Event.fire(Event.CLICK, this);
+        updateState();
     }
     private function onUpOutside(e:InteractionEvent):Void {
         if (!isActualInput(e))
             return;
 
-        downCurrentButton = false;
-        state = ButtonState.NORMAL;
+        isPress = false;
+        updateState();
 
         // Автонажатие:
         if (autopressInterval > 0) {
@@ -185,13 +185,13 @@ class Button extends Component
             interactive = true;
         }
         else {
-            state = ButtonState.NORMAL;
-            downCurrentButton = false;
             buttonMode = false;
             interactive = false;
         }
 
-        return super.set_enabled(value);
+        super.set_enabled(value);
+        updateState();
+        return value;
     }
 
     /**
@@ -262,22 +262,14 @@ class Button extends Component
     /**
      * Состояние кнопки.
      * 
-     * При установке нового значения регистрируются изменения в компоненте:
-     * - `Component.UPDATE_LAYERS` - Для переключения скинов состояния.
-     * - `Component.UPDATE_SIZE` - Для позицианирования элементов.
+     * Изменяется автоматически при взаимодействии пользователя с компонентом.
+     * Используется как индикатор для отображения необходимых текстур.
      * 
-     * По умолчанию: `ButtonState.NORMAL`
+     * По умолчанию: `ButtonState.NORMAL. (Обычно есостояние)
+     * 
+     * @event Event.STATE  Посылается в случае изменения состояния.
      */
-    public var state(default, set):ButtonState = ButtonState.NORMAL;
-    function set_state(value:ButtonState):ButtonState {
-        if (Utils.eq(value, state))
-            return value;
-
-        state = value;
-        update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
-        Event.fire(Event.STATE, this);
-        return value;
-    }
+    public var state(default, null):ButtonState = ButtonState.NORMAL;
 
     /**
      * Иконка на кнопке.
@@ -575,6 +567,31 @@ class Button extends Component
     ////////////////
 
     /**
+     * Обновить состояние кнопки.
+     * Интерпретирует текущее состояние компонента и записывает его в свойство: `state`.
+     * 
+     * @event Event.STATE - Отправляется в случае изменения значения: `state`.
+     */
+    private function updateState():Void {
+        var v = state;
+        if (enabled) {
+            if (isPress)        v = ButtonState.PRESS;
+            else if (isHover)   v = ButtonState.HOVER;
+            else                v = ButtonState.NORMAL;
+        }
+        else {
+            v = ButtonState.DISABLED;
+        }
+
+        if (Utils.eq(v, state))
+            return;
+
+        state = v;
+        update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
+        Event.fire(Event.STATE, this);
+    }
+
+    /**
      * Выгрузить кнопку.
 	 */
     override function destroy(?options:EitherType<Bool, DestroyOptions>) {
@@ -610,142 +627,59 @@ class Button extends Component
     /**
      * Иконка над текстом.
      */
-    static public var icoTop:SizeUpdater<Button> = function(bt) {
-        if (!bt.enabled) {
-            if (Utils.eq(bt.skinBgDisable, null)) {
-                Utils.show(bt, bt.skinBg);
-                Utils.hide(bt, bt.skinBgHover);
-                Utils.hide(bt, bt.skinBgPress);
-                //Utils.hide(bt, bt.skinBgDisable);
-            }
-            else {
-                Utils.hide(bt, bt.skinBg);
-                Utils.hide(bt, bt.skinBgHover);
-                Utils.hide(bt, bt.skinBgPress);
-                Utils.show(bt, bt.skinBgDisable);
-            }
+    static public var icoTop:SizeUpdater<Button> = function(c) {
+        var bg:Container = c.skinBg; // <-- Базовый скин, если не указано иное
+        var ico:Container = c.ico;
+        var label:Label = c.label;
+        var skins:Array<Container> = [ // Все скины, учавствующие в отображении. (В порядке отображения)
+            c.skinBg,
+            c.skinBgHover,
+            c.skinBgPress,
+            c.skinBgDisable,
+
+            c.label,
+            c.labelHover,
+            c.labelPress,
+            c.labelDisable,
+
+            c.ico,
+            c.icoHover,
+            c.icoPress,
+            c.icoDisable,
+        ];
+
+        // Конкретные скины:
+        if (Utils.eq(c.state, ButtonState.HOVER)) {
+            if (c.skinBgHover != null)      bg = c.skinBgHover;
+            if (c.labelHover != null)       ico = c.labelHover;
+            if (c.icoHover != null)         ico = c.icoHover;
+        }
+        else if (Utils.eq(c.state, ButtonState.PRESS)) {
+            if (c.skinBgPress != null)      bg = c.skinBgPress;
+            if (c.labelPress != null)       ico = c.labelPress;
+            if (c.icoPress != null)         ico = c.icoPress;
+        }
+        else if (Utils.eq(c.state, ButtonState.DISABLED)) {
+            if (c.skinBgDisable != null)    bg = c.skinBgDisable;
+            if (c.labelDisable != null)     ico = c.labelDisable;
+            if (c.icoDisable != null)       ico = c.icoDisable;
+        }
+        
+        // Отображение:
+        var i = 0;
+        var len = skins.length;
+        while (i < len) {
+            var skin = skins[i++];
+            if (skin == null)
+                continue;
             
-            if (Utils.eq(bt.labelDisable, null)) {
-                Utils.show(bt, bt.label);
-                Utils.hide(bt, bt.labelHover);
-                Utils.hide(bt, bt.labelPress);
-                //Utils.hide(bt, bt.labelDisable);
+            if (Utils.eq(skin,bg) || Utils.eq(skin,ico) || Utils.eq(skin,label)) {
+                c.addChild(skin);
             }
             else {
-                Utils.hide(bt, bt.label);
-                Utils.hide(bt, bt.labelHover);
-                Utils.hide(bt, bt.labelPress);
-                Utils.show(bt, bt.labelDisable);
+                if (Utils.eq(skin.parent,c))
+                    c.removeChild(skin);
             }
-
-            if (Utils.eq(bt.icoDisable, null)){
-                Utils.show(bt, bt.ico);
-                Utils.hide(bt, bt.icoHover);
-                Utils.hide(bt, bt.icoPress);
-                //Utils.hide(bt, bt.icoDisable);
-            }
-            else {
-                Utils.hide(bt, bt.ico);
-                Utils.hide(bt, bt.icoHover);
-                Utils.hide(bt, bt.icoPress);
-                Utils.show(bt, bt.icoDisable);
-            }
-        }
-        else if (Utils.eq(bt.state, ButtonState.HOVER)) {
-            if (Utils.eq(bt.skinBgHover, null)) {
-                Utils.show(bt, bt.skinBg);
-                //Utils.hide(bt, bt.skinBgHover);
-                Utils.hide(bt, bt.skinBgPress);
-                Utils.hide(bt, bt.skinBgDisable);
-            }
-            else {
-                Utils.hide(bt, bt.skinBg);
-                Utils.show(bt, bt.skinBgHover);
-                Utils.hide(bt, bt.skinBgPress);
-                Utils.hide(bt, bt.skinBgDisable);
-            }
-
-            if (Utils.eq(bt.labelHover, null)) {
-                Utils.show(bt, bt.label);
-                //Utils.hide(bt, bt.labelHover);
-                Utils.hide(bt, bt.labelPress);
-                Utils.hide(bt, bt.labelDisable);
-            }
-            else {
-                Utils.hide(bt, bt.label);
-                Utils.show(bt, bt.labelHover);
-                Utils.hide(bt, bt.labelPress);
-                Utils.hide(bt, bt.labelDisable);
-            }
-
-            if (Utils.eq(bt.icoHover, null)) {
-                Utils.show(bt, bt.ico);
-                //Utils.hide(bt, bt.icoHover);
-                Utils.hide(bt, bt.icoPress);
-                Utils.hide(bt, bt.icoDisable);
-            }
-            else {
-                Utils.hide(bt, bt.ico);
-                Utils.show(bt, bt.icoHover);
-                Utils.hide(bt, bt.icoPress);
-                Utils.hide(bt, bt.icoDisable);
-            }
-        }
-        else if (Utils.eq(bt.state, ButtonState.PRESS)) {
-            if (Utils.eq(bt.skinBgPress, null)) {
-                Utils.show(bt, bt.skinBg);
-                Utils.hide(bt, bt.skinBgHover);
-                //Utils.hide(bt, bt.skinBgPress);
-                Utils.hide(bt, bt.skinBgDisable);
-            }
-            else {
-                Utils.hide(bt, bt.skinBg);
-                Utils.hide(bt, bt.skinBgHover);
-                Utils.show(bt, bt.skinBgPress);
-                Utils.hide(bt, bt.skinBgDisable);
-            }
-
-            if (Utils.eq(bt.labelPress, null)) {
-                Utils.show(bt, bt.label);
-                Utils.hide(bt, bt.labelHover);
-                //Utils.hide(bt, bt.labelPress);
-                Utils.hide(bt, bt.labelDisable);
-            }
-            else {
-                Utils.hide(bt, bt.label);
-                Utils.hide(bt, bt.labelHover);
-                Utils.show(bt, bt.labelPress);
-                Utils.hide(bt, bt.labelDisable);
-            }
-
-            if (Utils.eq(bt.icoPress, null)) {
-                Utils.show(bt, bt.ico);
-                Utils.hide(bt, bt.icoHover);
-                //Utils.hide(bt, bt.icoPress);
-                Utils.hide(bt, bt.icoDisable);
-            }
-            else {
-                Utils.hide(bt, bt.ico);
-                Utils.hide(bt, bt.icoHover);
-                Utils.show(bt, bt.icoPress);
-                Utils.hide(bt, bt.icoDisable);
-            }
-        }
-        else { // NORMAL
-            Utils.show(bt, bt.skinBg);
-            Utils.hide(bt, bt.skinBgHover);
-            Utils.hide(bt, bt.skinBgPress);
-            Utils.hide(bt, bt.skinBgDisable);
-
-            Utils.show(bt, bt.label);
-            Utils.hide(bt, bt.labelHover);
-            Utils.hide(bt, bt.labelPress);
-            Utils.hide(bt, bt.labelDisable);
-
-            Utils.show(bt, bt.ico);
-            Utils.hide(bt, bt.icoHover);
-            Utils.hide(bt, bt.icoPress);
-            Utils.hide(bt, bt.icoDisable);
         }
     }
 
@@ -753,142 +687,59 @@ class Button extends Component
      * Иконка под текстом.
      * Используется по умолчанию.
      */
-    static public var icoDown:SizeUpdater<Button> = function(bt) {
-        if (!bt.enabled) {
-            if (Utils.eq(bt.skinBgDisable, null)) {
-                Utils.show(bt, bt.skinBg);
-                Utils.hide(bt, bt.skinBgHover);
-                Utils.hide(bt, bt.skinBgPress);
-                //Utils.hide(bt, bt.skinBgDisable);
-            }
-            else {
-                Utils.hide(bt, bt.skinBg);
-                Utils.hide(bt, bt.skinBgHover);
-                Utils.hide(bt, bt.skinBgPress);
-                Utils.show(bt, bt.skinBgDisable);
-            }
+    static public var icoDown:SizeUpdater<Button> = function(c) {
+        var bg:Container = c.skinBg; // <-- Базовый скин, если не указано иное
+        var ico:Container = c.ico;
+        var label:Label = c.label;
+        var skins:Array<Container> = [ // Все скины, учавствующие в отображении. (В порядке отображения)
+            c.skinBg,
+            c.skinBgHover,
+            c.skinBgPress,
+            c.skinBgDisable,
 
-            if (Utils.eq(bt.icoDisable, null)){
-                Utils.show(bt, bt.ico);
-                Utils.hide(bt, bt.icoHover);
-                Utils.hide(bt, bt.icoPress);
-                //Utils.hide(bt, bt.icoDisable);
-            }
-            else {
-                Utils.hide(bt, bt.ico);
-                Utils.hide(bt, bt.icoHover);
-                Utils.hide(bt, bt.icoPress);
-                Utils.show(bt, bt.icoDisable);
-            }
+            c.ico,
+            c.icoHover,
+            c.icoPress,
+            c.icoDisable,
 
-            if (Utils.eq(bt.labelDisable, null)) {
-                Utils.show(bt, bt.label);
-                Utils.hide(bt, bt.labelHover);
-                Utils.hide(bt, bt.labelPress);
-                //Utils.hide(bt, bt.labelDisable);
-            }
-            else {
-                Utils.hide(bt, bt.label);
-                Utils.hide(bt, bt.labelHover);
-                Utils.hide(bt, bt.labelPress);
-                Utils.show(bt, bt.labelDisable);
-            }
+            c.label,
+            c.labelHover,
+            c.labelPress,
+            c.labelDisable,
+        ];
+        
+        // Конкретные скины:
+        if (Utils.eq(c.state, ButtonState.HOVER)) {
+            if (c.skinBgHover != null)      bg = c.skinBgHover;
+            if (c.labelHover != null)       ico = c.labelHover;
+            if (c.icoHover != null)         ico = c.icoHover;
         }
-        else if (Utils.eq(bt.state, ButtonState.HOVER)) {
-            if (Utils.eq(bt.skinBgHover, null)) {
-                Utils.show(bt, bt.skinBg);
-                //Utils.hide(bt, bt.skinBgHover);
-                Utils.hide(bt, bt.skinBgPress);
-                Utils.hide(bt, bt.skinBgDisable);
-            }
-            else {
-                Utils.hide(bt, bt.skinBg);
-                Utils.show(bt, bt.skinBgHover);
-                Utils.hide(bt, bt.skinBgPress);
-                Utils.hide(bt, bt.skinBgDisable);
-            }
-
-            if (Utils.eq(bt.icoHover, null)) {
-                Utils.show(bt, bt.ico);
-                //Utils.hide(bt, bt.icoHover);
-                Utils.hide(bt, bt.icoPress);
-                Utils.hide(bt, bt.icoDisable);
-            }
-            else {
-                Utils.hide(bt, bt.ico);
-                Utils.show(bt, bt.icoHover);
-                Utils.hide(bt, bt.icoPress);
-                Utils.hide(bt, bt.icoDisable);
-            }
-
-            if (Utils.eq(bt.labelHover, null)) {
-                Utils.show(bt, bt.label);
-                //Utils.hide(bt, bt.labelHover);
-                Utils.hide(bt, bt.labelPress);
-                Utils.hide(bt, bt.labelDisable);
-            }
-            else {
-                Utils.hide(bt, bt.label);
-                Utils.show(bt, bt.labelHover);
-                Utils.hide(bt, bt.labelPress);
-                Utils.hide(bt, bt.labelDisable);
-            }
+        else if (Utils.eq(c.state, ButtonState.PRESS)) {
+            if (c.skinBgPress != null)      bg = c.skinBgPress;
+            if (c.labelPress != null)       ico = c.labelPress;
+            if (c.icoPress != null)         ico = c.icoPress;
         }
-        else if (Utils.eq(bt.state, ButtonState.PRESS)) {
-            if (Utils.eq(bt.skinBgPress, null)) {
-                Utils.show(bt, bt.skinBg);
-                Utils.hide(bt, bt.skinBgHover);
-                //Utils.hide(bt, bt.skinBgPress);
-                Utils.hide(bt, bt.skinBgDisable);
-            }
-            else {
-                Utils.hide(bt, bt.skinBg);
-                Utils.hide(bt, bt.skinBgHover);
-                Utils.show(bt, bt.skinBgPress);
-                Utils.show(bt, bt.skinBgDisable);
-            }
-
-            if (Utils.eq(bt.icoPress, null)) {
-                Utils.show(bt, bt.ico);
-                Utils.hide(bt, bt.icoHover);
-                //Utils.hide(bt, bt.icoPress);
-                Utils.hide(bt, bt.icoDisable);
-            }
-            else {
-                Utils.hide(bt, bt.ico);
-                Utils.hide(bt, bt.icoHover);
-                Utils.show(bt, bt.icoPress);
-                Utils.hide(bt, bt.icoDisable);
-            }
-
-            if (Utils.eq(bt.labelPress, null)) {
-                Utils.show(bt, bt.label);
-                Utils.hide(bt, bt.labelHover);
-                //Utils.hide(bt, bt.labelPress);
-                Utils.hide(bt, bt.labelDisable);
-            }
-            else {
-                Utils.hide(bt, bt.label);
-                Utils.hide(bt, bt.labelHover);
-                Utils.show(bt, bt.labelPress);
-                Utils.hide(bt, bt.labelDisable);
-            }
+        else if (Utils.eq(c.state, ButtonState.DISABLED)) {
+            if (c.skinBgDisable != null)    bg = c.skinBgDisable;
+            if (c.labelDisable != null)     ico = c.labelDisable;
+            if (c.icoDisable != null)       ico = c.icoDisable;
         }
-        else { // NORMAL
-            Utils.show(bt, bt.skinBg);
-            Utils.hide(bt, bt.skinBgHover);
-            Utils.hide(bt, bt.skinBgPress);
-            Utils.hide(bt, bt.skinBgDisable);
-
-            Utils.show(bt, bt.ico);
-            Utils.hide(bt, bt.icoHover);
-            Utils.hide(bt, bt.icoPress);
-            Utils.hide(bt, bt.icoDisable);
-
-            Utils.show(bt, bt.label);
-            Utils.hide(bt, bt.labelHover);
-            Utils.hide(bt, bt.labelPress);
-            Utils.hide(bt, bt.labelDisable);
+        
+        // Отображение:
+        var i = 0;
+        var len = skins.length;
+        while (i < len) {
+            var skin = skins[i++];
+            if (skin == null)
+                continue;
+            
+            if (Utils.eq(skin,bg) || Utils.eq(skin,ico) || Utils.eq(skin,label)) {
+                c.addChild(skin);
+            }
+            else {
+                if (Utils.eq(skin.parent,c))
+                    c.removeChild(skin);
+            }
         }
     }
 
@@ -931,7 +782,7 @@ class Button extends Component
         }
 
         // Состояние:
-        if (!bt.enabled) { // Выключено
+        if (Utils.eq(bt.state, ButtonState.DISABLED)) { // Выключено
             if (Utils.noeq(bt.icoDisable, null))        ico = bt.icoDisable;
             if (Utils.noeq(bt.labelDisable, null))      label = bt.labelDisable;
             if (Utils.noeq(bt.paddingDisable, null)) {
@@ -1025,7 +876,7 @@ class Button extends Component
         }
 
         // Состояние:
-        if (!bt.enabled) { // Выключено
+        if (Utils.eq(bt.state, ButtonState.DISABLED)) { // Выключено
             if (Utils.noeq(bt.icoDisable, null))        ico = bt.icoDisable;
             if (Utils.noeq(bt.labelDisable, null))      label = bt.labelDisable;
             if (Utils.noeq(bt.paddingDisable, null)) {
@@ -1119,7 +970,7 @@ class Button extends Component
         }
 
         // Состояние:
-        if (!bt.enabled) { // Выключено
+        if (Utils.eq(bt.state, ButtonState.DISABLED)) { // Выключено
             if (Utils.noeq(bt.icoDisable, null))        ico = bt.icoDisable;
             if (Utils.noeq(bt.labelDisable, null))      label = bt.labelDisable;
             if (Utils.noeq(bt.paddingDisable, null)) {
@@ -1213,7 +1064,7 @@ class Button extends Component
         }
 
         // Состояние:
-        if (!bt.enabled) { // Выключено
+        if (Utils.eq(bt.state, ButtonState.DISABLED)) { // Выключено
             if (Utils.noeq(bt.icoDisable, null))        ico = bt.icoDisable;
             if (Utils.noeq(bt.labelDisable, null))      label = bt.labelDisable;
             if (Utils.noeq(bt.paddingDisable, null)) {
@@ -1307,7 +1158,7 @@ class Button extends Component
         }
 
         // Состояние:
-        if (!bt.enabled) { // Выключено
+        if (Utils.eq(bt.state, ButtonState.DISABLED)) { // Выключено
             if (Utils.noeq(bt.icoDisable, null))        ico = bt.icoDisable;
             if (Utils.noeq(bt.labelDisable, null))      label = bt.labelDisable;
             if (Utils.noeq(bt.paddingDisable, null)) {
@@ -1401,7 +1252,7 @@ class Button extends Component
         }
 
         // Состояние:
-        if (!bt.enabled) { // Выключено
+        if (Utils.eq(bt.state, ButtonState.DISABLED)) { // Выключено
             if (Utils.noeq(bt.icoDisable, null))        ico = bt.icoDisable;
             if (Utils.noeq(bt.labelDisable, null))      label = bt.labelDisable;
             if (Utils.noeq(bt.paddingDisable, null)) {
@@ -1495,7 +1346,7 @@ class Button extends Component
         }
 
         // Состояние:
-        if (!bt.enabled) { // Выключено
+        if (Utils.eq(bt.state, ButtonState.DISABLED)) { // Выключено
             if (Utils.noeq(bt.icoDisable, null))        ico = bt.icoDisable;
             if (Utils.noeq(bt.labelDisable, null))      label = bt.labelDisable;
             if (Utils.noeq(bt.paddingDisable, null)) {
@@ -1587,9 +1438,9 @@ class Button extends Component
             if (bt.padding.right != null)   pr = bt.padding.right;
             if (bt.padding.bottom != null)  pb = bt.padding.bottom;
         }
-
+        
         // Состояние:
-        if (!bt.enabled) { // Выключено
+        if (Utils.eq(bt.state, ButtonState.DISABLED)) { // Выключено
             if (Utils.noeq(bt.icoDisable, null))        ico = bt.icoDisable;
             if (Utils.noeq(bt.labelDisable, null))      label = bt.labelDisable;
             if (Utils.noeq(bt.paddingDisable, null)) {
@@ -1683,7 +1534,7 @@ class Button extends Component
         }
 
         // Состояние:
-        if (!bt.enabled) { // Выключено
+        if (Utils.eq(bt.state, ButtonState.DISABLED)) { // Выключено
             if (Utils.noeq(bt.icoDisable, null))        ico = bt.icoDisable;
             if (Utils.noeq(bt.labelDisable, null))      label = bt.labelDisable;
             if (Utils.noeq(bt.paddingDisable, null)) {
@@ -1753,19 +1604,23 @@ class Button extends Component
 {
 	/**
      * Нормальное состояние.
-     * (Используется по умолчанию)
 	 */
     var NORMAL = 0;
     
     /**
-     * Наведение курсора.
+     * Наведение на кнопку.
      */
     var HOVER = 1;
 
     /**
-     * Нажатие.
+     * Нажатие на кнопку.
      */
     var PRESS = 2;
+
+    /**
+     * Кнопка выключена.
+     */
+    var DISABLED = 3;
 }
 
 /**
