@@ -34,7 +34,7 @@ github проект для подключения типов pixijs v5 в Haxe: 
 1. Установите haxelib себе на локальную машину, чтобы вы могли использовать библиотеки Haxe.
 2. Установите pui себе на локальную машину, глобально, используя cmd:
 ```
-haxelib git pako https://github.com/VolkovRA/HaxePUI master
+haxelib git pui https://github.com/VolkovRA/HaxePUI master
 ```
 Синтаксис команды:
 ```
