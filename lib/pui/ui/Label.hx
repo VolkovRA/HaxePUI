@@ -2,6 +2,7 @@ package pui.ui;
 
 import js.Syntax;
 import pui.ui.Component;
+import pixi.core.display.Container;
 import pixi.core.display.DisplayObject;
 import pixi.core.text.Text;
 import pixi.core.text.TextMetrics;
@@ -106,6 +107,66 @@ class Label extends Component
 
         alignY = value;
         update(false, Component.UPDATE_SIZE);
+        return value;
+    }
+
+    /**
+     * Текстура текста.
+     * 
+     * Позволяет задать фоновое изображение под текстом.
+     * При этом текст используется в качестве маски для текстуры.
+     * 
+     * - Это свойство работает только для векторного текста. (`skinText`)
+     * - Текстура растягивается на ширину и высоту компонента.
+     * 
+     * При установке нового значения регистрируются изменения в компоненте:
+     * - `Component.UPDATE_LAYERS` - Для обновления слоёв.
+     * - `Component.UPDATE_SIZE` - Для повторного масштабирования.
+     * 
+     * По умолчанию: `null`.
+     */
+    public var texture(default, set):Container = null;
+    function set_texture(value:Container):Container {
+        if (Utils.eq(value, texture))
+            return value;
+
+        if (texture != null) {
+            texture.mask = null;
+            Utils.hide(this, texture);
+        }
+        
+        texture = value;
+        update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
+        return value;
+    }
+
+    /**
+     * Текстура текста в выключенном состоянии.
+     * 
+     * Позволяет задать фоновое изображение под текстом.
+     * При этом текст используется в качестве маски для текстуры.
+     * 
+     * - Это свойство работает только для векторного текста. (`skinText`)
+     * - Текстура растягивается на ширину и высоту компонента.
+     * 
+     * При установке нового значения регистрируются изменения в компоненте:
+     * - `Component.UPDATE_LAYERS` - Для обновления слоёв.
+     * - `Component.UPDATE_SIZE` - Для повторного масштабирования.
+     * 
+     * По умолчанию: `null`.
+     */
+    public var textureDisable(default, set):Container = null;
+    function set_textureDisable(value:Container):Container {
+        if (Utils.eq(value, textureDisable))
+            return value;
+
+        if (textureDisable != null) {
+            textureDisable.mask = null;
+            Utils.hide(this, textureDisable);
+        }
+        
+        textureDisable = value;
+        update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
         return value;
     }
 
@@ -262,6 +323,7 @@ class Label extends Component
      * Выгрузить текстовую метку.
 	 */
     override function destroy(?options:EitherType<Bool, DestroyOptions>) {
+        Utils.destroySkin(texture, options);
         Utils.destroySkin(skinText, options);
         Utils.destroySkin(skinBitmapText, options);
         Utils.delete(text);
@@ -287,43 +349,50 @@ class Label extends Component
     /**
      * Базовое обновление списка отображения компонента `Label`.
      */
-    static public var updateLayersDefault:LayersUpdater<Label> = function(label) {
-        if (label.enabled) {
-            Utils.show(label, label.skinBg);
-            Utils.hide(label, label.skinBgDisable);
+    static public var updateLayersDefault:LayersUpdater<Label> = function(c) {
+        var bg:Container = c.skinBg; // <-- Базовый скин, если не указано иное
+        var tu:Container = c.texture;
+        var tx:Text = c.skinText;
+        var txb:BitmapText = c.skinBitmapText;
+        var skins:Array<Container> = [ // Все скины, учавствующие в отображении. (В порядке отображения)
+            c.skinBg,
+            c.skinBgDisable,
 
-            Utils.show(label, label.skinText);
-            Utils.hide(label, label.skinTextDisable);
+            c.skinText,
+            c.skinTextDisable,
+            c.texture,
+            c.textureDisable,
 
-            Utils.show(label, label.skinBitmapText);
-            Utils.hide(label, label.skinBitmapTextDisable);
+            c.skinBitmapText,
+            c.skinBitmapTextDisable
+        ];
+
+        // Конкретные скины:
+        if (!c.enabled) {
+            if (c.skinBgDisable != null)            bg = c.skinBgDisable;
+            if (c.textureDisable != null)           tu = c.textureDisable;
+            if (c.skinTextDisable != null)          tx = c.skinTextDisable;
+            if (c.skinBitmapTextDisable != null)    txb = c.skinBitmapTextDisable;
         }
-        else {
-            if (Utils.eq(label.skinBgDisable, null)) {
-                Utils.show(label, label.skinBg);
-                //Utils.hide(component, component.skinBgDisable);
-            }
-            else {
-                Utils.hide(label, label.skinBg);
-                Utils.show(label, label.skinBgDisable);
-            }
+        
+        // Режим маски:
+        if (tu != null)
+            tu.mask = tx;
 
-            if (Utils.eq(label.skinTextDisable, null)) {
-                Utils.show(label, label.skinText);
-                //Utils.hide(label, label.skinTextDisable);
+        // Отображение:
+        var i = 0;
+        var len = skins.length;
+        while (i < len) {
+            var skin = skins[i++];
+            if (skin == null)
+                continue;
+            
+            if (Utils.eq(skin,bg) || Utils.eq(skin,tu) || Utils.eq(skin,tx) || Utils.eq(skin,txb)) {
+                c.addChild(skin);
             }
             else {
-                Utils.hide(label, label.skinText);
-                Utils.show(label, label.skinTextDisable);
-            }
-
-            if (Utils.eq(label.skinBitmapTextDisable, null)) {
-                Utils.show(label, label.skinBitmapText);
-                //Utils.hide(label, label.skinBitmapTextDisable);
-            }
-            else {
-                Utils.hide(label, label.skinBitmapText);
-                Utils.show(label, label.skinBitmapTextDisable);
+                if (Utils.eq(skin.parent,c))
+                    c.removeChild(skin);
             }
         }
     }
@@ -394,38 +463,41 @@ class Label extends Component
             // Определяем новые размеры компонента: (Зависит от состояния)
             if (label.enabled) {
                 if (Utils.noeq(label.skinText, null)) {
-                    Utils.set(label.w, Math.round(mst.maxLineWidth + pl + pr));
-                    Utils.set(label.h, Math.round(mst.lines.length * mst.lineHeight + pt + pb));
+                    var style:TextStyle = untyped label.skinText.style;
+                    Utils.set(label.w, Math.round(mst.maxLineWidth + Math.max(0, pl) + Math.max(0, pr) + style.measureWidth));
+                    Utils.set(label.h, Math.round(mst.lines.length * mst.lineHeight + Math.max(0, pt) + Math.max(0, pb) + style.measureHeight));
                 }
                 else if (Utils.noeq(label.skinBitmapText, null)) {
-                    Utils.set(label.w, Math.round(label.skinBitmapText.width + pl + pr));
-                    Utils.set(label.h, Math.round(label.skinBitmapText.height + pt + pb));
+                    Utils.set(label.w, Math.round(label.skinBitmapText.width + Math.max(0, pl) + Math.max(0, pr)));
+                    Utils.set(label.h, Math.round(label.skinBitmapText.height + Math.max(0, pt) + Math.max(0, pb)));
                 }
                 else {
-                    Utils.set(label.w, pl + pr);
-                    Utils.set(label.h, pt + pb);
+                    Utils.set(label.w, Math.max(0, pl) + Math.max(0, pr));
+                    Utils.set(label.h, Math.max(0, pt) + Math.max(0, pb));
                 }
             }
             else {
                 if (Utils.noeq(label.skinTextDisable, null)) {
-                    Utils.set(label.w, Math.round(mstd.maxLineWidth + pl2 + pr2));
-                    Utils.set(label.h, Math.round(mstd.lines.length * mstd.lineHeight + pt2 + pb2));
+                    var style:TextStyle = untyped label.skinTextDisable.style;
+                    Utils.set(label.w, Math.round(mstd.maxLineWidth + Math.max(0, pl2) + Math.max(0, pr2) + style.measureWidth));
+                    Utils.set(label.h, Math.round(mstd.lines.length * mstd.lineHeight + Math.max(0, pt2) + Math.max(0, pb2) + style.measureHeight));
                 }
                 else if (Utils.noeq(label.skinBitmapTextDisable, null)) {
-                    Utils.set(label.w, Math.round(label.skinBitmapTextDisable.width + pl2 + pr2));
-                    Utils.set(label.h, Math.round(label.skinBitmapTextDisable.height + pt2 + pb2));
+                    Utils.set(label.w, Math.round(label.skinBitmapTextDisable.width + Math.max(0, pl2) + Math.max(0, pr2)));
+                    Utils.set(label.h, Math.round(label.skinBitmapTextDisable.height + Math.max(0, pt2) + Math.max(0, pb2)));
                 }
                 else if (Utils.noeq(label.skinText, null)) {
-                    Utils.set(label.w, Math.round(mst.maxLineWidth + pl2 + pr2));
-                    Utils.set(label.h, Math.round(mst.lines.length * mst.lineHeight + pt2 + pb2));
+                    var style:TextStyle = untyped label.skinText.style;
+                    Utils.set(label.w, Math.round(mst.maxLineWidth + Math.max(0, pl2) + Math.max(0, pr2) + style.measureWidth));
+                    Utils.set(label.h, Math.round(mst.lines.length * mst.lineHeight + Math.max(0, pt2) + Math.max(0, pb2) + style.measureHeight));
                 }
                 else if (Utils.noeq(label.skinBitmapText, null)) {
-                    Utils.set(label.w, Math.round(label.skinBitmapText.width + pl2 + pr2));
-                    Utils.set(label.h, Math.round(label.skinBitmapText.height + pt2 + pb2));
+                    Utils.set(label.w, Math.round(label.skinBitmapText.width + Math.max(0, pl2) + Math.max(0, pr2)));
+                    Utils.set(label.h, Math.round(label.skinBitmapText.height + Math.max(0, pt2) + Math.max(0, pb2)));
                 }
                 else {
-                    Utils.set(label.w, pl2 + pr2);
-                    Utils.set(label.h, pt2 + pb2);
+                    Utils.set(label.w, Math.max(0, pl2) + Math.max(0, pr2));
+                    Utils.set(label.h, Math.max(0, pt2) + Math.max(0, pb2));
                 }
             }
         }
@@ -433,83 +505,103 @@ class Label extends Component
         // Позицианирование:
         if (Utils.noeq(label.skinText, null)) {
             if (label.enabled) {
-                if (Utils.eq(label.alignX, AlignX.RIGHT))       label.skinText.x = Math.round(label.w - mst.maxLineWidth - pr);
-                else if (Utils.eq(label.alignX, AlignX.CENTER)) label.skinText.x = Math.round((label.w - mst.maxLineWidth) / 2);
+                if (Utils.eq(label.alignX, AlignX.RIGHT))       label.skinText.x = Math.round(pl + label.w - mst.maxLineWidth - pr);
+                else if (Utils.eq(label.alignX, AlignX.CENTER)) label.skinText.x = Math.round(pl + (label.w - mst.maxLineWidth) / 2);
                 else                                            label.skinText.x = Math.round(pl);
                 
-                if (Utils.eq(label.alignY, AlignY.BOTTOM))      label.skinText.y = Math.round(label.h - mst.lines.length * mst.lineHeight - pb);
-                else if (Utils.eq(label.alignY, AlignY.CENTER)) label.skinText.y = Math.round((label.h - mst.lines.length * mst.lineHeight) / 2);
+                if (Utils.eq(label.alignY, AlignY.BOTTOM))      label.skinText.y = Math.round(pt + label.h - mst.lines.length * mst.lineHeight - pb);
+                else if (Utils.eq(label.alignY, AlignY.CENTER)) label.skinText.y = Math.round(pt + (label.h - mst.lines.length * mst.lineHeight) / 2);
                 else                                            label.skinText.y = Math.round(pt);
             }
             else {
-                if (Utils.eq(label.alignX, AlignX.RIGHT))       label.skinText.x = Math.round(label.w - mst.maxLineWidth - pr2);
-                else if (Utils.eq(label.alignX, AlignX.CENTER)) label.skinText.x = Math.round((label.w - mst.maxLineWidth) / 2);
+                if (Utils.eq(label.alignX, AlignX.RIGHT))       label.skinText.x = Math.round(pl2 + label.w - mst.maxLineWidth - pr2);
+                else if (Utils.eq(label.alignX, AlignX.CENTER)) label.skinText.x = Math.round(pl2 + (label.w - mst.maxLineWidth) / 2);
                 else                                            label.skinText.x = Math.round(pl2);
                 
-                if (Utils.eq(label.alignY, AlignY.BOTTOM))      label.skinText.y = Math.round(label.h - mst.lines.length * mst.lineHeight - pb2);
-                else if (Utils.eq(label.alignY, AlignY.CENTER)) label.skinText.y = Math.round((label.h - mst.lines.length * mst.lineHeight) / 2);
+                if (Utils.eq(label.alignY, AlignY.BOTTOM))      label.skinText.y = Math.round(pt2 + label.h - mst.lines.length * mst.lineHeight - pb2);
+                else if (Utils.eq(label.alignY, AlignY.CENTER)) label.skinText.y = Math.round(pt2 + (label.h - mst.lines.length * mst.lineHeight) / 2);
                 else                                            label.skinText.y = Math.round(pt2);
             }
         }
         if (Utils.noeq(label.skinTextDisable, null)) {
             if (label.enabled) {
-                if (Utils.eq(label.alignX, AlignX.RIGHT))       label.skinTextDisable.x = Math.round(label.w - mstd.maxLineWidth - pr);
-                else if (Utils.eq(label.alignX, AlignX.CENTER)) label.skinTextDisable.x = Math.round((label.w - mstd.maxLineWidth) / 2);
+                if (Utils.eq(label.alignX, AlignX.RIGHT))       label.skinTextDisable.x = Math.round(pl + label.w - mstd.maxLineWidth - pr);
+                else if (Utils.eq(label.alignX, AlignX.CENTER)) label.skinTextDisable.x = Math.round(pl + (label.w - mstd.maxLineWidth) / 2);
                 else                                            label.skinTextDisable.x = Math.round(pl);
                 
-                if (Utils.eq(label.alignY, AlignY.BOTTOM))      label.skinTextDisable.y = Math.round(label.h - mstd.lines.length * mstd.lineHeight - pb);
-                else if (Utils.eq(label.alignY, AlignY.CENTER)) label.skinTextDisable.y = Math.round((label.h - mstd.lines.length * mstd.lineHeight) / 2);
+                if (Utils.eq(label.alignY, AlignY.BOTTOM))      label.skinTextDisable.y = Math.round(pt + label.h - mstd.lines.length * mstd.lineHeight - pb);
+                else if (Utils.eq(label.alignY, AlignY.CENTER)) label.skinTextDisable.y = Math.round(pt + (label.h - mstd.lines.length * mstd.lineHeight) / 2);
                 else                                            label.skinTextDisable.y = Math.round(pt);
             }
             else {
-                if (Utils.eq(label.alignX, AlignX.RIGHT))       label.skinTextDisable.x = Math.round(label.w - mstd.maxLineWidth - pr2);
-                else if (Utils.eq(label.alignX, AlignX.CENTER)) label.skinTextDisable.x = Math.round((label.w - mstd.maxLineWidth) / 2);
+                if (Utils.eq(label.alignX, AlignX.RIGHT))       label.skinTextDisable.x = Math.round(pl2 + label.w - mstd.maxLineWidth - pr2);
+                else if (Utils.eq(label.alignX, AlignX.CENTER)) label.skinTextDisable.x = Math.round(pl2 + (label.w - mstd.maxLineWidth) / 2);
                 else                                            label.skinTextDisable.x = Math.round(pl2);
                 
-                if (Utils.eq(label.alignY, AlignY.BOTTOM))      label.skinTextDisable.y = Math.round(label.h - mstd.lines.length * mstd.lineHeight - pb2);
-                else if (Utils.eq(label.alignY, AlignY.CENTER)) label.skinTextDisable.y = Math.round((label.h - mstd.lines.length * mstd.lineHeight) / 2);
+                if (Utils.eq(label.alignY, AlignY.BOTTOM))      label.skinTextDisable.y = Math.round(pt2 + label.h - mstd.lines.length * mstd.lineHeight - pb2);
+                else if (Utils.eq(label.alignY, AlignY.CENTER)) label.skinTextDisable.y = Math.round(pt2 + (label.h - mstd.lines.length * mstd.lineHeight) / 2);
                 else                                            label.skinTextDisable.y = Math.round(pt2);
             }
         }
         if (Utils.noeq(label.skinBitmapText, null)) {
             if (label.enabled) {
-                if (Utils.eq(label.alignX, AlignX.RIGHT))       label.skinBitmapText.x = Math.round(label.w - label.skinBitmapText.width - pr);
-                else if (Utils.eq(label.alignX, AlignX.CENTER)) label.skinBitmapText.x = Math.round((label.w - label.skinBitmapText.width) / 2);
+                if (Utils.eq(label.alignX, AlignX.RIGHT))       label.skinBitmapText.x = Math.round(pl + label.w - label.skinBitmapText.width - pr);
+                else if (Utils.eq(label.alignX, AlignX.CENTER)) label.skinBitmapText.x = Math.round(pl + (label.w - label.skinBitmapText.width) / 2);
                 else                                            label.skinBitmapText.x = Math.round(pl);
                 
-                if (Utils.eq(label.alignY, AlignY.BOTTOM))      label.skinBitmapText.y = Math.round(label.h - label.skinBitmapText.height - pb);
-                else if (Utils.eq(label.alignY, AlignY.CENTER)) label.skinBitmapText.y = Math.round((label.h - label.skinBitmapText.height) / 2);
+                if (Utils.eq(label.alignY, AlignY.BOTTOM))      label.skinBitmapText.y = Math.round(pt + label.h - label.skinBitmapText.height - pb);
+                else if (Utils.eq(label.alignY, AlignY.CENTER)) label.skinBitmapText.y = Math.round(pt + (label.h - label.skinBitmapText.height) / 2);
                 else                                            label.skinBitmapText.y = Math.round(pt);
             }
             else {
-                if (Utils.eq(label.alignX, AlignX.RIGHT))       label.skinBitmapText.x = Math.round(label.w - label.skinBitmapText.width - pr2);
-                else if (Utils.eq(label.alignX, AlignX.CENTER)) label.skinBitmapText.x = Math.round((label.w - label.skinBitmapText.width) / 2);
+                if (Utils.eq(label.alignX, AlignX.RIGHT))       label.skinBitmapText.x = Math.round(pl2 + label.w - label.skinBitmapText.width - pr2);
+                else if (Utils.eq(label.alignX, AlignX.CENTER)) label.skinBitmapText.x = Math.round(pl2 + (label.w - label.skinBitmapText.width) / 2);
                 else                                            label.skinBitmapText.x = Math.round(pl2);
                 
-                if (Utils.eq(label.alignY, AlignY.BOTTOM))      label.skinBitmapText.y = Math.round(label.h - label.skinBitmapText.height - pb2);
-                else if (Utils.eq(label.alignY, AlignY.CENTER)) label.skinBitmapText.y = Math.round((label.h - label.skinBitmapText.height) / 2);
+                if (Utils.eq(label.alignY, AlignY.BOTTOM))      label.skinBitmapText.y = Math.round(pt2 + label.h - label.skinBitmapText.height - pb2);
+                else if (Utils.eq(label.alignY, AlignY.CENTER)) label.skinBitmapText.y = Math.round(pt2 + (label.h - label.skinBitmapText.height) / 2);
                 else                                            label.skinBitmapText.y = Math.round(pt2);
             }
         }
         if (Utils.noeq(label.skinBitmapTextDisable, null)) {
             if (label.enabled) {
-                if (Utils.eq(label.alignX, AlignX.RIGHT))       label.skinBitmapTextDisable.x = Math.round(label.w - label.skinBitmapTextDisable.width - pr);
-                else if (Utils.eq(label.alignX, AlignX.CENTER)) label.skinBitmapTextDisable.x = Math.round((label.w - label.skinBitmapTextDisable.width) / 2);
+                if (Utils.eq(label.alignX, AlignX.RIGHT))       label.skinBitmapTextDisable.x = Math.round(pl + label.w - label.skinBitmapTextDisable.width - pr);
+                else if (Utils.eq(label.alignX, AlignX.CENTER)) label.skinBitmapTextDisable.x = Math.round(pl + (label.w - label.skinBitmapTextDisable.width) / 2);
                 else                                            label.skinBitmapTextDisable.x = Math.round(pl);
                 
-                if (Utils.eq(label.alignY, AlignY.BOTTOM))      label.skinBitmapTextDisable.y = Math.round(label.h - label.skinBitmapTextDisable.height - pb);
-                else if (Utils.eq(label.alignY, AlignY.CENTER)) label.skinBitmapTextDisable.y = Math.round((label.h - label.skinBitmapTextDisable.height) / 2);
+                if (Utils.eq(label.alignY, AlignY.BOTTOM))      label.skinBitmapTextDisable.y = Math.round(pt + label.h - label.skinBitmapTextDisable.height - pb);
+                else if (Utils.eq(label.alignY, AlignY.CENTER)) label.skinBitmapTextDisable.y = Math.round(pt + (label.h - label.skinBitmapTextDisable.height) / 2);
                 else                                            label.skinBitmapTextDisable.y = Math.round(pt);
             }
             else {
-                if (Utils.eq(label.alignX, AlignX.RIGHT))       label.skinBitmapTextDisable.x = Math.round(label.w - label.skinBitmapTextDisable.width - pr2);
-                else if (Utils.eq(label.alignX, AlignX.CENTER)) label.skinBitmapTextDisable.x = Math.round((label.w - label.skinBitmapTextDisable.width) / 2);
+                if (Utils.eq(label.alignX, AlignX.RIGHT))       label.skinBitmapTextDisable.x = Math.round(pl2 + label.w - label.skinBitmapTextDisable.width - pr2);
+                else if (Utils.eq(label.alignX, AlignX.CENTER)) label.skinBitmapTextDisable.x = Math.round(pl2 + (label.w - label.skinBitmapTextDisable.width) / 2);
                 else                                            label.skinBitmapTextDisable.x = Math.round(pl2);
                 
-                if (Utils.eq(label.alignY, AlignY.BOTTOM))      label.skinBitmapTextDisable.y = Math.round(label.h - label.skinBitmapTextDisable.height - pb2);
-                else if (Utils.eq(label.alignY, AlignY.CENTER)) label.skinBitmapTextDisable.y = Math.round((label.h - label.skinBitmapTextDisable.height) / 2);
+                if (Utils.eq(label.alignY, AlignY.BOTTOM))      label.skinBitmapTextDisable.y = Math.round(pt2 + label.h - label.skinBitmapTextDisable.height - pb2);
+                else if (Utils.eq(label.alignY, AlignY.CENTER)) label.skinBitmapTextDisable.y = Math.round(pt2 + (label.h - label.skinBitmapTextDisable.height) / 2);
                 else                                            label.skinBitmapTextDisable.y = Math.round(pt2);
             }
+        }
+
+        // Текстура и маска:
+        var tu = label.texture;
+        var tx = label.skinText;
+        if (label.textureDisable != null && label.textureDisable.parent == label)
+            tu = label.textureDisable;
+        if (label.skinTextDisable != null && label.skinTextDisable.parent == label)
+            tx = label.skinTextDisable;
+        if (tu != null) {
+            if (tx == null) {
+                tu.x = 0;
+                tu.y = 0;
+            }
+            else {
+                tu.x = tx.x;
+                tu.y = tx.y;
+            }
+            tu.width = label.w;
+            tu.height = label.h;
         }
 
         // Фоны:
