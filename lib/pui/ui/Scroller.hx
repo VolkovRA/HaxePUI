@@ -67,12 +67,10 @@ class Scroller extends Component
         scrollV = new ScrollBar();
         scrollV.orientation = Orientation.VERTICAL;
         scrollV.on(Event.CHANGE, onScrollbarChangeV);
-        scrollV.update(true);
 
         scrollH = new ScrollBar();
         scrollH.orientation = Orientation.HORIZONTAL;
         scrollH.on(Event.CHANGE, onScrollbarChangeH);
-        scrollH.update(true);
 
         var mask = new Graphics();
         mask.beginFill(0xff0000);
@@ -719,6 +717,10 @@ class Scroller extends Component
         
         // Требуется ещё одно обновление:
         var needUPD = false;
+
+        // Первичное обновление ползунков:
+        if (!sc.scrollH.isInit) sc.scrollH.update(true);
+        if (!sc.scrollV.isInit) sc.scrollV.update(true);
 
         // Размеры контента:
         var b = sc.contentBounds;
