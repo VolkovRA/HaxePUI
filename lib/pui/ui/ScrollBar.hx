@@ -43,9 +43,14 @@ class ScrollBar extends Component
         super();
         
         this.componentType = TYPE;
+        this.interactive = true;
 
         Utils.set(this.updateLayers, ScrollBar.defaultLayers);
         Utils.set(this.updateSize, ScrollBar.defaultSize);
+
+        on(PixiEvent.POINTER_DOWN, onDown);
+        on(PixiEvent.POINTER_UP, onUp);
+        on(PixiEvent.POINTER_UP_OUTSIDE, onUp);
     }
 
 
@@ -229,29 +234,29 @@ class ScrollBar extends Component
             value += step;
     }
 
-    private function onBgDown(e:InteractionEvent):Void {
+    private function onDown(e:InteractionEvent):Void {
         if (!isActualInput(e))
             return;
         
         e.stopPropagation();
 
-        skinScroll.on(PixiEvent.POINTER_MOVE, onBgMove);
-        onBgMove(e);
+        on(PixiEvent.POINTER_MOVE, onMove);
+        onMove(e);
     }
 
-    private function onBgUp(e:InteractionEvent):Void {
+    private function onUp(e:InteractionEvent):Void {
         if (!isActualInput(e))
             return;
 
-        skinScroll.off(PixiEvent.POINTER_MOVE, onBgMove);
+        off(PixiEvent.POINTER_MOVE, onMove);
     }
 
-    private function onBgMove(e:InteractionEvent):Void {
+    private function onMove(e:InteractionEvent):Void {
         if (!isActualInput(e)) {
-            skinScroll.off(PixiEvent.POINTER_MOVE, onBgMove);
+            off(PixiEvent.POINTER_MOVE, onMove);
             return;
         }
-        
+        trace("Yaaaa!");
         POINT.x = e.data.global.x;
         POINT.y = e.data.global.y;
         toLocal(POINT, null, POINT);
@@ -282,7 +287,7 @@ class ScrollBar extends Component
                     value = ((POINT.x - fx) / fw) * (max - min) + min;
             }
             else {
-                skinScroll.off(PixiEvent.POINTER_MOVE, onBgMove);
+                off(PixiEvent.POINTER_MOVE, onMove);
             }
         }
         else {
@@ -311,7 +316,7 @@ class ScrollBar extends Component
                     value = ((POINT.y - fy) / fh) * (max - min) + min;
             }
             else {
-                skinScroll.off(PixiEvent.POINTER_MOVE, onBgMove);
+                off(PixiEvent.POINTER_MOVE, onMove);
             }
         }
     }
@@ -643,22 +648,8 @@ class ScrollBar extends Component
         if (Utils.eq(value, skinScroll))
             return value;
 
-        if (Utils.noeq(skinScroll, null)) {
-            Utils.hide(this, skinScroll);
-            skinScroll.off(PixiEvent.POINTER_DOWN, onBgDown);
-            skinScroll.off(PixiEvent.POINTER_MOVE, onBgMove);
-            skinScroll.off(PixiEvent.POINTER_UP, onBgUp);
-            skinScroll.off(PixiEvent.POINTER_UP_OUTSIDE, onBgUp);
-        }
-
+        Utils.hide(this, skinScroll);
         skinScroll = value;
-
-        if (Utils.noeq(skinScroll, null)) {
-            skinScroll.on(PixiEvent.POINTER_DOWN, onBgDown);
-            skinScroll.on(PixiEvent.POINTER_UP, onBgUp);
-            skinScroll.on(PixiEvent.POINTER_UP_OUTSIDE, onBgUp);
-        }
-
         update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
         return value;
     }

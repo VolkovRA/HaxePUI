@@ -580,7 +580,6 @@ class Theme extends EventEmitter
     public function unknownStyleScrollBar(scroll:ScrollBar):Void {
         if (Utils.eq(scroll.skinScroll, null)) {
             var bg = new Graphics();
-            bg.interactive = true;
             bg.beginFill(COLOR_GRAY_DARK);
             bg.drawRect(0, 0, 10, 10);
             scroll.skinScroll = bg;
@@ -687,7 +686,6 @@ class Theme extends EventEmitter
     public function unknownStyleScroller(sc:Scroller):Void {
         if (Utils.eq(sc.skinBg, null)) {
             var bg = new Graphics();
-            bg.interactive = true;
             bg.beginFill(COLOR_GRAY_DARK);
             bg.drawRect(0, 0, 10, 10);
             sc.skinBg = bg;
@@ -707,7 +705,6 @@ class Theme extends EventEmitter
     public function unknownStyleList(list:List):Void {
         if (Utils.eq(list.skinBg, null)) {
             var bg = new Graphics();
-            bg.interactive = true;
             bg.beginFill(COLOR_GRAY_DARK);
             bg.drawRect(0, 0, 10, 10);
             list.skinBg = bg;
