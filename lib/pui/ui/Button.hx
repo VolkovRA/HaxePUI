@@ -651,17 +651,17 @@ class Button extends Component
         // Конкретные скины:
         if (Utils.eq(c.state, ButtonState.HOVER)) {
             if (c.skinBgHover != null)      bg = c.skinBgHover;
-            if (c.labelHover != null)       ico = c.labelHover;
+            if (c.labelHover != null)       label = c.labelHover;
             if (c.icoHover != null)         ico = c.icoHover;
         }
         else if (Utils.eq(c.state, ButtonState.PRESS)) {
             if (c.skinBgPress != null)      bg = c.skinBgPress;
-            if (c.labelPress != null)       ico = c.labelPress;
+            if (c.labelPress != null)       label = c.labelPress;
             if (c.icoPress != null)         ico = c.icoPress;
         }
         else if (Utils.eq(c.state, ButtonState.DISABLED)) {
             if (c.skinBgDisable != null)    bg = c.skinBgDisable;
-            if (c.labelDisable != null)     ico = c.labelDisable;
+            if (c.labelDisable != null)     label = c.labelDisable;
             if (c.icoDisable != null)       ico = c.icoDisable;
         }
         
@@ -711,17 +711,17 @@ class Button extends Component
         // Конкретные скины:
         if (Utils.eq(c.state, ButtonState.HOVER)) {
             if (c.skinBgHover != null)      bg = c.skinBgHover;
-            if (c.labelHover != null)       ico = c.labelHover;
+            if (c.labelHover != null)       label = c.labelHover;
             if (c.icoHover != null)         ico = c.icoHover;
         }
         else if (Utils.eq(c.state, ButtonState.PRESS)) {
             if (c.skinBgPress != null)      bg = c.skinBgPress;
-            if (c.labelPress != null)       ico = c.labelPress;
+            if (c.labelPress != null)       label = c.labelPress;
             if (c.icoPress != null)         ico = c.icoPress;
         }
         else if (Utils.eq(c.state, ButtonState.DISABLED)) {
             if (c.skinBgDisable != null)    bg = c.skinBgDisable;
-            if (c.labelDisable != null)     ico = c.labelDisable;
+            if (c.labelDisable != null)     label = c.labelDisable;
             if (c.icoDisable != null)       ico = c.icoDisable;
         }
         
