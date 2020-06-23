@@ -1,10 +1,13 @@
-package pui;
+package pui.ext;
+
+import pixi.core.text.DefaultStyle;
+import pixi.core.text.TextStyle;
 
 /**
  * Стили текста.
  * 
  * Этот класс используется только для исправления проблемы с некорректным
- * подсчётом размеров текста, см.: `TextMetrics`. В стальном он аналогичен
+ * подсчётом размеров текста, см.: `TextMetrics`. В остальном он аналогичен
  * базовому.
  * 
  * Класс добавляет два новых свойства:
@@ -13,25 +16,25 @@ package pui;
  * Спомощью этих свойств вы можете более точно указать занимаемую текстом область.
  * Это используется в `Label` при расчёте авторазмеров. 
  */
-class TextStyle extends pixi.core.text.TextStyle
+class TextStyleMeasure extends TextStyle
 {
     /**
      * Дополнительный размер занимаемой области текстом по ширине. (px)
      * Используется для расчётов занимаемой области текстом.
      */
-    public var measureWidth:Float;
+    public var measureWidth:Null<Float>;
 
     /**
      * Дополнительный размер занимаемой области текстом по высоте. (px)
      * Используется для расчётов занимаемой области текстом.
      */
-    public var measureHeight:Float;
+    public var measureHeight:Null<Float>;
 
     /**
      * Создать новый стиль.
      * @param style Параметры по умолчанию.
      */
-    public function new(?style:DefaultStyle) {
+    public function new(?style:DefaultStyleMeasure) {
         super(style);
     }
 
@@ -40,8 +43,8 @@ class TextStyle extends pixi.core.text.TextStyle
      */
     override function reset() {
         super.reset();
-        measureWidth = 0;
-        measureHeight = 0;
+        measureWidth = null;
+        measureHeight = null;
     }
 
     /**
@@ -50,7 +53,7 @@ class TextStyle extends pixi.core.text.TextStyle
      *
      * @return {PIXI.TextStyle} New cloned TextStyle object
      */
-    override function clone():pixi.core.text.TextStyle {
+    override function clone():TextStyle {
         var copy = super.clone();
         untyped copy.measureWidth = measureWidth;
         untyped copy.measureHeight = measureHeight;
@@ -61,9 +64,9 @@ class TextStyle extends pixi.core.text.TextStyle
 /**
  * Параметры стилей.
  */
-typedef DefaultStyle =
+typedef DefaultStyleMeasure =
 {
-    >pixi.core.text.DefaultStyle,
+    >DefaultStyle,
 
     /**
      * Дополнительный размер занимаемой области текстом по ширине. (px)

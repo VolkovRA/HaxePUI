@@ -2,6 +2,7 @@ package pui.ui;
 
 import js.Syntax;
 import pui.ui.Component;
+import pui.ext.TextStyleMeasure;
 import pixi.core.display.Container;
 import pixi.core.display.DisplayObject;
 import pixi.core.text.Text;
@@ -463,9 +464,9 @@ class Label extends Component
             // Определяем новые размеры компонента: (Зависит от состояния)
             if (label.enabled) {
                 if (Utils.noeq(label.skinText, null)) {
-                    var style:TextStyle = untyped label.skinText.style;
-                    Utils.set(label.w, Math.round(mst.maxLineWidth + Math.max(0, pl) + Math.max(0, pr) + style.measureWidth));
-                    Utils.set(label.h, Math.round(mst.lines.length * mst.lineHeight + Math.max(0, pt) + Math.max(0, pb) + style.measureHeight));
+                    var style:TextStyleMeasure = untyped label.skinText.style;
+                    Utils.set(label.w, Math.round(mst.maxLineWidth + Math.max(0, pl) + Math.max(0, pr) + (style.measureWidth==null?0:style.measureWidth)));
+                    Utils.set(label.h, Math.round(mst.lines.length * mst.lineHeight + Math.max(0, pt) + Math.max(0, pb) + (style.measureHeight==null?0:style.measureHeight)));
                 }
                 else if (Utils.noeq(label.skinBitmapText, null)) {
                     Utils.set(label.w, Math.round(label.skinBitmapText.width + Math.max(0, pl) + Math.max(0, pr)));
@@ -478,18 +479,18 @@ class Label extends Component
             }
             else {
                 if (Utils.noeq(label.skinTextDisable, null)) {
-                    var style:TextStyle = untyped label.skinTextDisable.style;
-                    Utils.set(label.w, Math.round(mstd.maxLineWidth + Math.max(0, pl2) + Math.max(0, pr2) + style.measureWidth));
-                    Utils.set(label.h, Math.round(mstd.lines.length * mstd.lineHeight + Math.max(0, pt2) + Math.max(0, pb2) + style.measureHeight));
+                    var style:TextStyleMeasure = untyped label.skinTextDisable.style;
+                    Utils.set(label.w, Math.round(mstd.maxLineWidth + Math.max(0, pl2) + Math.max(0, pr2) + (style.measureWidth==null?0:style.measureWidth)));
+                    Utils.set(label.h, Math.round(mstd.lines.length * mstd.lineHeight + Math.max(0, pt2) + Math.max(0, pb2) + (style.measureHeight==null?0:style.measureHeight)));
                 }
                 else if (Utils.noeq(label.skinBitmapTextDisable, null)) {
                     Utils.set(label.w, Math.round(label.skinBitmapTextDisable.width + Math.max(0, pl2) + Math.max(0, pr2)));
                     Utils.set(label.h, Math.round(label.skinBitmapTextDisable.height + Math.max(0, pt2) + Math.max(0, pb2)));
                 }
                 else if (Utils.noeq(label.skinText, null)) {
-                    var style:TextStyle = untyped label.skinText.style;
-                    Utils.set(label.w, Math.round(mst.maxLineWidth + Math.max(0, pl2) + Math.max(0, pr2) + style.measureWidth));
-                    Utils.set(label.h, Math.round(mst.lines.length * mst.lineHeight + Math.max(0, pt2) + Math.max(0, pb2) + style.measureHeight));
+                    var style:TextStyleMeasure = untyped label.skinText.style;
+                    Utils.set(label.w, Math.round(mst.maxLineWidth + Math.max(0, pl2) + Math.max(0, pr2) + (style.measureWidth==null?0:style.measureWidth)));
+                    Utils.set(label.h, Math.round(mst.lines.length * mst.lineHeight + Math.max(0, pt2) + Math.max(0, pb2) + (style.measureHeight==null?0:style.measureHeight)));
                 }
                 else if (Utils.noeq(label.skinBitmapText, null)) {
                     Utils.set(label.w, Math.round(label.skinBitmapText.width + Math.max(0, pl2) + Math.max(0, pr2)));
