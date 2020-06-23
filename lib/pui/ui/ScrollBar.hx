@@ -256,7 +256,7 @@ class ScrollBar extends Component
             off(PixiEvent.POINTER_MOVE, onMove);
             return;
         }
-        trace("Yaaaa!");
+
         POINT.x = e.data.global.x;
         POINT.y = e.data.global.y;
         toLocal(POINT, null, POINT);
@@ -276,19 +276,33 @@ class ScrollBar extends Component
                 fw -= incBt.w;
             }
 
-            // Активность только в рамах скроллбара:
-            if (fw > 0 && POINT.x >= fx && POINT.x <= fx + fw && POINT.y >= 0 && POINT.y <= h) {
-                if (!pointMode && thumb != null && POINT.x >= thumb.x && POINT.x <= thumb.x + thumb.w && POINT.y >= thumb.y && POINT.y <= thumb.y + thumb.h)
-                    return;
-
-                if (invert)
-                    value = (1 - ((POINT.x - fx) / fw)) * (max - min) + min;
-                else
-                    value = ((POINT.x - fx) / fw) * (max - min) + min;
+            // Вычисляем значение:
+            if (fw > 0) {
+                if (POINT.x <= fx)
+                    value = invert?max:min;
+                else if (POINT.x >= fx + fw)
+                    value = invert?min:max;
+                else {
+                    // Не скролим когда над ползунком: (Только растягиваемый ползунок)
+                    if (!(!pointMode && thumb != null && POINT.y >= thumb.y && POINT.y <= thumb.y + thumb.h && POINT.x >= thumb.x && POINT.x <= thumb.x + thumb.w)) {
+                        if (invert)
+                            value = (1 - ((POINT.x - fx) / fw)) * (max - min) + min;
+                        else
+                            value = ((POINT.x - fx) / fw) * (max - min) + min;
+                    }
+                }
             }
             else {
-                off(PixiEvent.POINTER_MOVE, onMove);
+                // Доступной области для промежуточного значения нету:
+                if (POINT.x > fx)
+                    value = invert?min:max;
+                else
+                    value = invert?max:min;
             }
+            
+            // Активность только в рамах скроллбара:
+            if (POINT.x < 0 || POINT.x > w || POINT.y < 0 || POINT.y > h)
+                off(PixiEvent.POINTER_MOVE, onMove);
         }
         else {
             var fy:Float = 0;
@@ -305,19 +319,33 @@ class ScrollBar extends Component
                 fh -= incBt.h;
             }
 
-            // Активность только в рамах скроллбара:
-            if (fh > 0 && POINT.y >= fy && POINT.y <= fy + fh && POINT.x >= 0 && POINT.x <= w) {
-                if (!pointMode && thumb != null && POINT.y >= thumb.y && POINT.y <= thumb.y + thumb.h && POINT.x >= thumb.x && POINT.x <= thumb.x + thumb.w)
-                    return;
-
-                if (invert)
-                    value = (1 - ((POINT.y - fy) / fh)) * (max - min) + min;
-                else
-                    value = ((POINT.y - fy) / fh) * (max - min) + min;
+            // Вычисляем значение:
+            if (fh > 0) {
+                if (POINT.y <= fy)
+                    value = invert?max:min;
+                else if (POINT.y >= fy + fh)
+                    value = invert?min:max;
+                else {
+                    // Не скролим когда над ползунком: (Только растягиваемый ползунок)
+                    if (!(!pointMode && thumb != null && POINT.y >= thumb.y && POINT.y <= thumb.y + thumb.h && POINT.x >= thumb.x && POINT.x <= thumb.x + thumb.w)) {
+                        if (invert)
+                            value = (1 - ((POINT.y - fy) / fh)) * (max - min) + min;
+                        else
+                            value = ((POINT.y - fy) / fh) * (max - min) + min;
+                    }
+                }
             }
             else {
-                off(PixiEvent.POINTER_MOVE, onMove);
+                // Доступной области для промежуточного значения нету:
+                if (POINT.y > fy)
+                    value = invert?min:max;
+                else
+                    value = invert?max:min;
             }
+            
+            // Активность только в рамах скроллбара:
+            if (POINT.x < 0 || POINT.x > w || POINT.y < 0 || POINT.y > h)
+                off(PixiEvent.POINTER_MOVE, onMove);
         }
     }
 
