@@ -41,7 +41,6 @@ class Main
     private static var scrollbarsTitle:Label;
     private static var scroll1:ScrollBar;
     private static var scroll2:ScrollBar;
-    private static var scroll3:ScrollBar;
     private static var scrollersTitle:Label;
     private static var scroller1:Scroller;
     private static var scroller2:Scroller;
@@ -56,6 +55,10 @@ class Main
     private static var check1:CheckBox;
     private static var check2:CheckBox;
     private static var check3:CheckBox;
+    private static var toggleTitle:Label;
+    private static var toggle1:ToggleButton;
+    private static var toggle2:ToggleButton;
+    private static var toggle3:ToggleButton;
 
     /**
      * Точка входа.
@@ -145,10 +148,42 @@ class Main
         button3.paddingPress = { left:0, top:2, right:0, bottom:0 };
         app.stage.addChild(button3);
 
+        // Зажимные кнопки:
+        toggleTitle = new Label("Toggle button");
+        toggleTitle.autosize = true;
+        toggleTitle.x = 200;
+        toggleTitle.y = 130;
+        app.stage.addChild(toggleTitle);
+
+        toggle1 = new ToggleButton();
+        toggle1.text = "Toggle";
+        toggle1.x = toggleTitle.x;
+        toggle1.y = toggleTitle.y + 40;
+        app.stage.addChild(toggle1);
+
+        toggle2 = new ToggleButton();
+        toggle2.ico = untyped button2.ico.clone();
+        toggle2.icoGap = 5;
+        toggle2.text = "With ico";
+        toggle2.x = toggle1.x;
+        toggle2.y = toggle1.y + 50;
+        toggle2.paddingPress = { left:0, top:2, right:0, bottom:0 };
+        toggle2.paddingActivePress = toggle2.paddingPress;
+        app.stage.addChild(toggle2);
+
+        toggle3 = new ToggleButton();
+        toggle3.ico = untyped button3.ico.clone();
+        toggle3.icoActive = untyped button3.icoPress.clone();
+        toggle3.x = toggle2.x;
+        toggle3.y = toggle2.y + 50;
+        toggle3.paddingPress = { left:0, top:2, right:0, bottom:0 };
+        toggle3.paddingActivePress = toggle3.paddingPress;
+        app.stage.addChild(toggle3);
+
         // Скроллбары:
         scrollbarsTitle = new Label("ScrollBar");
-        scrollbarsTitle.x = 200;
-        scrollbarsTitle.y = 130;
+        scrollbarsTitle.x = 400;
+        scrollbarsTitle.y = 450;
         app.stage.addChild(scrollbarsTitle);
 
         scroll1 = new ScrollBar();
@@ -161,12 +196,6 @@ class Main
         scroll2.y = scroll1.y + 30;
         scroll2.pointMode = true;
         app.stage.addChild(scroll2);
-
-        scroll3 = new ScrollBar();
-        scroll3.orientation = Orientation.VERTICAL;
-        scroll3.x = scroll2.x;
-        scroll3.y = scroll2.y + 30;
-        app.stage.addChild(scroll3);
 
         // Скроллера
         scrollersTitle = new Label("Scroller");

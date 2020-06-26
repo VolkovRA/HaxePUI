@@ -1,5 +1,6 @@
 package pui;
 
+import pui.ui.ToggleButton;
 import js.Browser;
 import js.Syntax;
 import haxe.DynamicAccess;
@@ -520,6 +521,7 @@ class Theme extends EventEmitter
     public function unknownStyle(component:Component):Void {
         if (Utils.eq(component.componentType, Label.TYPE))              unknownStyleLabel(untyped component);
         else if (Utils.eq(component.componentType, Button.TYPE))        unknownStyleButton(untyped component);
+        else if (Utils.eq(component.componentType, ToggleButton.TYPE))  unknownStyleToggle(untyped component);
         else if (Utils.eq(component.componentType, ScrollBar.TYPE))     unknownStyleScrollBar(untyped component);
         else if (Utils.eq(component.componentType, ProgressBar.TYPE))   unknownStyleProgressBar(untyped component);
         else if (Utils.eq(component.componentType, CheckBox.TYPE))      unknownStyleCheckBox(untyped component);
@@ -570,6 +572,36 @@ class Theme extends EventEmitter
         if (Utils.eq(button.skinBgPress, null)) button.skinBgPress = press;
         if (Utils.eq(button.w, 0))              button.w = 100;
         if (Utils.eq(button.h, 0))              button.h = 40;
+    }
+
+    /**
+     * Дефолтное оформление `ToggleButton`.
+     * Используется для подкраски компонентов, стиль которых не задан.
+     * @param button Кнопка.
+     */
+    public function unknownStyleToggle(button:ToggleButton):Void {
+        var dark = new Graphics();
+        dark.beginFill(COLOR_GRAY_DARK);
+        dark.drawRect(0, 0, 10, 10);
+
+        var gray = new Graphics();
+        gray.beginFill(COLOR_GRAY);
+        gray.drawRect(0, 0, 10, 10);
+
+        var bright = new Graphics();
+        bright.beginFill(COLOR_GRAY_BRIGHT);
+        bright.drawRect(0, 0, 10, 10);
+
+        if (Utils.eq(button.label, null))               button.label = new Label();
+        if (Utils.eq(button.skinBg, null))              button.skinBg = dark;
+        if (Utils.eq(button.skinBgHover, null))         button.skinBgHover = gray;
+        if (Utils.eq(button.skinBgPress, null))         button.skinBgPress = gray;
+        if (Utils.eq(button.skinBgActive, null))        button.skinBgActive = gray;
+        if (Utils.eq(button.skinBgActiveHover, null))   button.skinBgActiveHover = bright;
+        if (Utils.eq(button.skinBgActivePress, null))   button.skinBgActivePress = bright;
+
+        if (Utils.eq(button.w, 0)) button.w = 100;
+        if (Utils.eq(button.h, 0)) button.h = 40;
     }
 
     /**

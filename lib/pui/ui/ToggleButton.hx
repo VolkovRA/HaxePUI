@@ -1,51 +1,51 @@
 package pui.ui;
 
-import js.Browser;
-import pui.ui.Component;
 import pui.events.Event;
 import pui.pixi.PixiEvent;
+import pui.ui.Component;
 import pixi.core.display.Container;
 import pixi.core.display.DisplayObject;
 import pixi.interaction.InteractionEvent;
 import haxe.extern.EitherType;
 
 /**
- * Кнопка.
+ * Зажимная кнопка.
  * Может содержать текст и/или картинку.
  * 
+ * Похожа на обычную кнопку но с тем отличием, что может
+ * находиться в двух состояниях: `Нажата` и `Не нажата`. (См.: `value`)
+ * Идеально подходит для выключателя света.
+ * 
+ * @event Event.CHANGE              Кнопка: вкл/выкл. Диспетчерезируется при изменении значения кнопки: `value`.
  * @event Event.PRESS               Нажатие на кнопку. Это событие не диспетчерезируется, если кнопка была выключена: `enabled=false`.
  * @event Event.CLICK               Клик по кнопке. Не путайте с событиями PixiJS. Это событие не диспетчерезируется, если кнопка была выключена: `enabled=false`.
- * @event Event.DOUBLE_CLICK        Двойной клик по кнопке. Необходимо отдельно включить в настройках кнопки: `Button.dblClick.enabled = true`.
  * @event Event.STATE               Состояние кнопки изменено.
  * @event ComponentEvent.UPDATED    Компонент обновился. (Перерисовался)
  * @event WheelEvent.WHEEL          Промотка колёсиком мыши. Это событие необходимо включить: `Component.inputWheel`.
  */
-class Button extends Component
+class ToggleButton extends Component
 {
     /**
-     * Тип компонента `Button`.
+     * Тип компонента `ToggleButton`.
      */
-    static public inline var TYPE:String = "Button";
+    static public inline var TYPE:String = "ToggleButton";
 
     // Приват
-    private var history:Dynamic = {};
     private var isHover:Bool = false;
     private var isPress:Bool = false;
-    private var autopressTimeout:Int = 0;
-    private var autopressInterval:Int = 0;
 
     /**
      * Создать кнопку.
      */
     public function new() {
         super();
-        
+
         this.componentType = TYPE;
         this.buttonMode = true;
         this.interactive = true;
 
-        Utils.set(this.updateLayers, Button.icoDown);
-        Utils.set(this.updateSize, Button.pos8);
+        Utils.set(this.updateLayers, ToggleButton.icoDown);
+        Utils.set(this.updateSize, ToggleButton.pos8);
 
         on(PixiEvent.POINTER_OVER, onRollOver);
         on(PixiEvent.POINTER_OUT, onRollOut);
@@ -72,15 +72,6 @@ class Button extends Component
             return;
         
         // Автонажатие:
-        if (autopressInterval > 0) {
-            Browser.window.clearInterval(autopressInterval);
-            autopressInterval = 0;
-        }
-        if (autopressTimeout > 0) {
-            Browser.window.clearTimeout(autopressTimeout);
-            autopressTimeout = 0;
-        }
-
         isHover = false;
         updateState();
     }
@@ -89,49 +80,8 @@ class Button extends Component
             return;
 
         e.stopPropagation();
-
         isPress = true;
         updateState();
-
-        // Автонажатие:
-        if (autopress.enabled && autopressInterval == 0 && autopressTimeout == 0) {
-            autopressTimeout = Browser.window.setTimeout(function(){
-                if (autopressInterval == 0) {
-                    autopressInterval = Browser.window.setInterval(function(){
-                        Event.fire(Event.PRESS, this);
-                    }, autopress.interval);
-                }
-            }, autopress.delay);
-        }
-
-        // Двойной клик:
-        if (dblClick.enabled) {
-            var item = {
-                t: Utils.uptime(),
-                x: e.data.global.x,
-                y: e.data.global.y,
-            }
-
-            var pre = history[e.data.identifier];
-            if (pre == null || item.t > pre.t + dblClick.time) {
-                history[e.data.identifier] = item;
-                Event.fire(Event.PRESS, this);
-                return;
-            }
-
-            var dx = pre.x - item.x;
-            var dy = pre.y - item.y;
-            if (Math.abs(dx*dx + dy*dy) > dblClick.dist * dblClick.dist) {
-                history[e.data.identifier] = item;
-                Event.fire(Event.PRESS, this);
-                return;
-            }
-
-            history[e.data.identifier] = null;
-            Event.fire(Event.PRESS, this);
-            Event.fire(Event.DOUBLE_CLICK, this);
-            return;
-        }
         Event.fire(Event.PRESS, this);
     }
     private function onUp(e:InteractionEvent):Void {
@@ -139,16 +89,7 @@ class Button extends Component
             return;
         
         isPress = false;
-
-        // Автонажатие:
-        if (autopressInterval > 0) {
-            Browser.window.clearInterval(autopressInterval);
-            autopressInterval = 0;
-        }
-        if (autopressTimeout > 0) {
-            Browser.window.clearTimeout(autopressTimeout);
-            autopressTimeout = 0;
-        }
+        value = !value;
         Event.fire(Event.CLICK, this);
         updateState();
     }
@@ -158,16 +99,6 @@ class Button extends Component
 
         isPress = false;
         updateState();
-
-        // Автонажатие:
-        if (autopressInterval > 0) {
-            Browser.window.clearInterval(autopressInterval);
-            autopressInterval = 0;
-        }
-        if (autopressTimeout > 0) {
-            Browser.window.clearTimeout(autopressTimeout);
-            autopressTimeout = 0;
-        }
     }
 
 
@@ -195,27 +126,23 @@ class Button extends Component
     }
 
     /**
-     * Параметры срабатывания двойного нажатия.
-     * Позволяет включить/выключить отправку событий двойного клика по кнопке.
+     * Кнопка вкл/выкл.
      * 
-     * Не может быть `null`.
+     * При установке нового значения регистрируются изменения в компоненте:
+     * - `Component.UPDATE_LAYERS` - Для переключения слоёв.
+     * - `Component.UPDATE_SIZE` - Для повторного позицианирования.
+     * 
+     * По умолчанию: `false`. (Кнопка не включена)
      */
-    public var dblClick(default, null):DoubleClickParams = {
-        enabled: false,
-        time: 250,
-        dist: 10,
-    }
+    public var value(default, set):Bool = false;
+    function set_value(v:Bool):Bool {
+        if (Utils.eq(v, value))
+            return v;
 
-    /**
-     * Параметры автонажатия.
-     * Позволяет включить/выключить отправку повторных событий при долгом нажатии на кнопку.
-     * 
-     * Не может быть `null`.
-     */
-    public var autopress(default, null):AutoPressParams = {
-        enabled: false,
-        delay: 250,
-        interval: 20,
+        value = v;
+        update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
+        Event.fire(Event.CHANGE, this);
+        return v;
     }
 
     /**
@@ -249,7 +176,7 @@ class Button extends Component
             
             text = value;
             update(false, Component.UPDATE_SIZE);
-    
+
             if (Utils.noeq(label, null))            label.text = value;
             if (Utils.noeq(labelHover, null))       labelHover.text = value;
             if (Utils.noeq(labelPress, null))       labelPress.text = value;
@@ -265,11 +192,11 @@ class Button extends Component
      * Изменяется автоматически при взаимодействии пользователя с компонентом.
      * Используется как индикатор для отображения необходимых текстур.
      * 
-     * По умолчанию: `ButtonState.NORMAL`. (Обычно есостояние)
+     * По умолчанию: `ToggleButtonState.NORMAL`. (Обычно есостояние)
      * 
      * @event Event.STATE  Посылается в случае изменения состояния.
      */
-    public var state(default, null):ButtonState = ButtonState.NORMAL;
+    public var state(default, null):ToggleButtonState = ToggleButtonState.NORMAL;
 
     /**
      * Иконка на кнопке.
@@ -560,6 +487,338 @@ class Button extends Component
         return value;
     }
 
+    /**
+     * Иконка на кнопке. (Включенная кнопка)
+     * Если значение не задано, используется `ico`.
+     * 
+     * При установке нового значения регистрируются изменения в компоненте:
+     * - `Component.UPDATE_LAYERS` - Для добавления иконки в дисплей лист.
+     * - `Component.UPDATE_SIZE` - Для позицианирования иконки.
+     * 
+     * По умолчанию: `null`.
+     */
+    public var icoActive(default, set):Container = null;
+    function set_icoActive(value:Container):Container {
+        if (Utils.eq(value, icoActive))
+            return value;
+
+        Utils.hide(this, icoActive);
+        icoActive = value;
+        update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
+        return value;
+    }
+
+    /**
+     * Иконка на кнопке при наведении курсора. (Включенная кнопка)
+     * Если значение не задано, используется `icoActive`.
+     * 
+     * При установке нового значения регистрируются изменения в компоненте:
+     * - `Component.UPDATE_LAYERS` - Для добавления иконки в дисплей лист.
+     * - `Component.UPDATE_SIZE` - Для позицианирования иконки.
+     * 
+     * По умолчанию: `null`.
+     */
+    public var icoActiveHover(default, set):Container = null;
+    function set_icoActiveHover(value:Container):Container {
+        if (Utils.eq(value, icoActiveHover))
+            return value;
+
+        Utils.hide(this, icoActiveHover);
+        icoActiveHover = value;
+        update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
+        return value;
+    }
+
+    /**
+     * Иконка на кнопке при нажатии. (Включенная кнопка)
+     * Если значение не задано, используется `icoActive`.
+     * 
+     * При установке нового значения регистрируются изменения в компоненте:
+     * - `Component.UPDATE_LAYERS` - Для добавления иконки в дисплей лист.
+     * - `Component.UPDATE_SIZE` - Для позицианирования иконки.
+     * 
+     * По умолчанию: `null`.
+     */
+    public var icoActivePress(default, set):Container = null;
+    function set_icoActivePress(value:Container):Container {
+        if (Utils.eq(value, icoActivePress))
+            return value;
+
+        Utils.hide(this, icoActivePress);
+        icoActivePress = value;
+        update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
+        return value;
+    }
+
+    /**
+     * Иконка на кнопке в выключенном состоянии. (`enabled=false`) (Включенная кнопка)
+     * Если значение не задано, используется `icoActive`.
+     * 
+     * При установке нового значения регистрируются изменения в компоненте:
+     * - `Component.UPDATE_LAYERS` - Для добавления иконки в дисплей лист.
+     * - `Component.UPDATE_SIZE` - Для позицианирования иконки.
+     * 
+     * По умолчанию: `null`.
+     */
+    public var icoActiveDisable(default, set):Container = null;
+    function set_icoActiveDisable(value:Container):Container {
+        if (Utils.eq(value, icoActiveDisable))
+            return value;
+
+        Utils.hide(this, icoActiveDisable);
+        icoActiveDisable = value;
+        update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
+        return value;
+    }
+
+    /**
+     * Метка с текстом на кнопке. (Включенная кнопка)
+     * Если значение не задано, используется `label`.
+     * 
+     * При установке нового значения регистрируются изменения в компоненте:
+     * - `Component.UPDATE_LAYERS` - Для добавления метки в дисплей лист.
+     * - `Component.UPDATE_SIZE` - Для позицианирования метки.
+     * 
+     * По умолчанию: `null`. (Текст на кнопке не будет отрисован)
+     */
+    public var labelActive(default, set):Label = null;
+    function set_labelActive(value:Label):Label {
+        if (Utils.eq(value, labelActive))
+            return value;
+
+        Utils.hide(this, labelActive);
+        labelActive = value;
+        update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
+        value.text = text;
+        return value;
+    }
+
+    /**
+     * Метка с текстом на кнопке при наведении. (Включенная кнопка)
+     * Если значение не задано, используется `labelActive`.
+     * 
+     * При установке нового значения регистрируются изменения в компоненте:
+     * - `Component.UPDATE_LAYERS` - Для добавления метки в дисплей лист.
+     * - `Component.UPDATE_SIZE` - Для позицианирования метки.
+     * 
+     * По умолчанию: `null`.
+     */
+    public var labelActiveHover(default, set):Label = null;
+    function set_labelActiveHover(value:Label):Label {
+        if (Utils.eq(value, labelActiveHover))
+            return value;
+
+        Utils.hide(this, labelActiveHover);
+        labelActiveHover = value;
+        update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
+        value.text = text;
+        return value;
+    }
+
+    /**
+     * Метка с текстом на кнопке при нажатии на кнопку. (Включенная кнопка)
+     * Если значение не задано, используется `labelActive`.
+     * 
+     * При установке нового значения регистрируются изменения в компоненте:
+     * - `Component.UPDATE_LAYERS` - Для добавления метки в дисплей лист.
+     * - `Component.UPDATE_SIZE` - Для позицианирования метки.
+     * 
+     * По умолчанию: `null`.
+     */
+    public var labelActivePress(default, set):Label = null;
+    function set_labelActivePress(value:Label):Label {
+        if (Utils.eq(value, labelActivePress))
+            return value;
+
+        Utils.hide(this, labelActivePress);
+        labelActivePress = value;
+        update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
+        value.text = text;
+        return value;
+    }
+
+    /**
+     * Метка с текстом на кнопке в выключенном состоянии. (Включенная кнопка)
+     * Если значение не задано, используется `labelActive`.
+     * 
+     * При установке нового значения регистрируются изменения в компоненте:
+     * - `Component.UPDATE_LAYERS` - Для добавления метки в дисплей лист.
+     * - `Component.UPDATE_SIZE` - Для позицианирования метки.
+     * 
+     * По умолчанию: `null`.
+     */
+    public var labelActiveDisable(default, set):Label = null;
+    function set_labelActiveDisable(value:Label):Label {
+        if (Utils.eq(value, labelActiveDisable))
+            return value;
+
+        Utils.hide(this, labelActiveDisable);
+        labelActiveDisable = value;
+        update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
+        value.text = text;
+        return value;
+    }
+
+    /**
+     * Отступы содержимого. (Включенная кнопка)
+     * Если не задано, используется `padding`.
+     * 
+     * При установке нового значения регистрируются изменения в компоненте:
+     * - `Component.UPDATE_SIZE` - Для повторного позицианирования.
+     * 
+     * По умолчанию: `null`.
+     */
+    public var paddingActive(default, set):Offset = null;
+    function set_paddingActive(value:Offset):Offset {
+        if (Utils.eq(value, paddingActive))
+            return value;
+
+        paddingActive = value;
+        update(false, Component.UPDATE_SIZE);
+        return value;
+    }
+
+    /**
+     * Отступы содержимого при наведении курсора. (Включенная кнопка)
+     * Если не задано, используется `paddingActive`.
+     * 
+     * При установке нового значения регистрируются изменения в компоненте:
+     * - `Component.UPDATE_SIZE` - Для повторного позицианирования.
+     * 
+     * По умолчанию: `null`.
+     */
+    public var paddingActiveHover(default, set):Offset = null;
+    function set_paddingActiveHover(value:Offset):Offset {
+        if (Utils.eq(value, paddingActiveHover))
+            return value;
+
+        paddingActiveHover = value;
+        update(false, Component.UPDATE_SIZE);
+        return value;
+    }
+
+    /**
+     * Отступы содержимого при нажатии. (Включенная кнопка)
+     * Если не задано, используется `paddingActive`.
+     * 
+     * При установке нового значения регистрируются изменения в компоненте:
+     * - `Component.UPDATE_SIZE` - Для повторного позицианирования.
+     * 
+     * По умолчанию: `null`.
+     */
+    public var paddingActivePress(default, set):Offset = null;
+    function set_paddingActivePress(value:Offset):Offset {
+        if (Utils.eq(value, paddingActivePress))
+            return value;
+
+        paddingActivePress = value;
+        update(false, Component.UPDATE_SIZE);
+        return value;
+    }
+
+    /**
+     * Отступы содержимого в выключенном состоянии. (Включенная кнопка)
+     * Если не задано, используется `paddingActive`.
+     * 
+     * При установке нового значения регистрируются изменения в компоненте:
+     * - `Component.UPDATE_SIZE` - Для повторного позицианирования.
+     * 
+     * По умолчанию: `null`.
+     */
+    public var paddingActiveDisable(default, set):Offset = null;
+    function set_paddingActiveDisable(value:Offset):Offset {
+        if (Utils.eq(value, paddingActiveDisable))
+            return value;
+
+        paddingActiveDisable = value;
+        update(false, Component.UPDATE_SIZE);
+        return value;
+    }
+
+    /**
+     * Скин заднего фона при наведении курсора. (Включенная кнопка)
+     * Если значение не задано, используется `skinBg`.
+     * 
+     * При установке нового значения регистрируются изменения в компоненте:
+     * - `Component.UPDATE_LAYERS` - Для добавления скина в дисплей лист.
+     * - `Component.UPDATE_SIZE` - Для позицианирования скина.
+     * 
+     * По умолчанию: `null`.
+     */
+    public var skinBgActive(default, set):Container = null;
+    function set_skinBgActive(value:Container):Container {
+        if (Utils.eq(value, skinBgActive))
+            return value;
+
+        Utils.hide(this, skinBgActive);
+        skinBgActive = value;
+        update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
+        return value;
+    }
+
+    /**
+     * Скин заднего фона при наведении курсора. (Включенная кнопка)
+     * Если значение не задано, используется `skinBgActive`.
+     * 
+     * При установке нового значения регистрируются изменения в компоненте:
+     * - `Component.UPDATE_LAYERS` - Для добавления скина в дисплей лист.
+     * - `Component.UPDATE_SIZE` - Для позицианирования скина.
+     * 
+     * По умолчанию: `null`.
+     */
+    public var skinBgActiveHover(default, set):Container = null;
+    function set_skinBgActiveHover(value:Container):Container {
+        if (Utils.eq(value, skinBgActiveHover))
+            return value;
+
+        Utils.hide(this, skinBgActiveHover);
+        skinBgActiveHover = value;
+        update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
+        return value;
+    }
+
+    /**
+     * Скин заднего фона при нажатии. (Включенная кнопка)
+     * Если значение не задано, используется `skinBgActive`.
+     * 
+     * При установке нового значения регистрируются изменения в компоненте:
+     * - `Component.UPDATE_LAYERS` - Для добавления скина в дисплей лист.
+     * - `Component.UPDATE_SIZE` - Для позицианирования скина.
+     * 
+     * По умолчанию: `null`.
+     */
+    public var skinBgActivePress(default, set):Container = null;
+    function set_skinBgActivePress(value:Container):Container {
+        if (Utils.eq(value, skinBgActivePress))
+            return value;
+
+        Utils.hide(this, skinBgActivePress);
+        skinBgActivePress = value;
+        update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
+        return value;
+    }
+
+    /**
+     * Скин заднего фона выключенного состояния. (Включенная кнопка)
+     * Если значение не задано, используется `skinBgActive`.
+     * 
+     * При установке нового значения регистрируются изменения в компоненте:
+     * - `Component.UPDATE_LAYERS` - Для переключения фона выключенного состояния.
+     * - `Component.UPDATE_SIZE` - Для позицианирования фона выключенного состояния.
+     * 
+     * По умолчанию: `null`.
+     */
+    public var skinBgActiveDisable(default, set):Container = null;
+    function set_skinBgActiveDisable(value:Container):Container {
+        if (Utils.eq(value, skinBgActiveDisable))
+            return value;
+
+        Utils.hide(this, skinBgActiveDisable);
+        skinBgActiveDisable = value;
+        update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
+        return value;
+    }
+
 
 
     ////////////////
@@ -574,12 +833,22 @@ class Button extends Component
     private function updateState():Void {
         var v = state;
         if (enabled) {
-            if (isPress)        v = ButtonState.PRESS;
-            else if (isHover)   v = ButtonState.HOVER;
-            else                v = ButtonState.NORMAL;
+            if (value) {
+                if (isPress)        v = ToggleButtonState.ACTIVE_PRESS;
+                else if (isHover)   v = ToggleButtonState.ACTIVE_HOVER;
+                else                v = ToggleButtonState.ACTIVE_NORMAL;
+            }
+            else {
+                if (isPress)        v = ToggleButtonState.PRESS;
+                else if (isHover)   v = ToggleButtonState.HOVER;
+                else                v = ToggleButtonState.NORMAL;
+            }
         }
         else {
-            v = ButtonState.DISABLED;
+            if (value)
+                v = ToggleButtonState.ACTIVE_DISABLED;
+            else
+                v = ToggleButtonState.DISABLED;
         }
 
         if (Utils.eq(v, state))
@@ -598,21 +867,30 @@ class Button extends Component
         Utils.destroySkin(labelHover, options);
         Utils.destroySkin(labelPress, options);
         Utils.destroySkin(labelDisable, options);
+
+        Utils.destroySkin(labelActive, options);
+        Utils.destroySkin(labelActiveHover, options);
+        Utils.destroySkin(labelActivePress, options);
+        Utils.destroySkin(labelActiveDisable, options);
+
         Utils.destroySkin(ico, options);
         Utils.destroySkin(icoHover, options);
         Utils.destroySkin(icoPress, options);
         Utils.destroySkin(icoDisable, options);
+
+        Utils.destroySkin(icoActive, options);
+        Utils.destroySkin(icoActiveHover, options);
+        Utils.destroySkin(icoActivePress, options);
+        Utils.destroySkin(icoActiveDisable, options);
+
         Utils.destroySkin(skinBgHover, options);
         Utils.destroySkin(skinBgPress, options);
+        Utils.destroySkin(skinBgPress, options);
 
-        if (autopressInterval > 0) {
-            Browser.window.clearInterval(autopressInterval);
-            autopressInterval = 0;
-        }
-        if (autopressTimeout > 0) {
-            Browser.window.clearTimeout(autopressTimeout);
-            autopressTimeout = 0;
-        }
+        Utils.destroySkin(skinBgActive, options);
+        Utils.destroySkin(skinBgActiveHover, options);
+        Utils.destroySkin(skinBgActivePress, options);
+        Utils.destroySkin(skinBgActiveDisable, options);
 
         super.destroy(options);
     }
@@ -629,29 +907,51 @@ class Button extends Component
      * @param skins Все скины, учавствующие в отображении. (В порядке отображения)
      * @param bt Настраиваемая кнопка.
      */
-    static public function showLayers(skins:Array<Container>, bt:Button):Void {
+    static public function showLayers(skins:Array<Container>, bt:ToggleButton):Void {
         
         // Настройка слоёв.
         // Базовые скины, если не будет указано иное:
         var bg:Container    = bt.skinBg;
         var ico:Container   = bt.ico;
         var label:Label     = bt.label;
-        
+
+        // Скины второго порядка: (Если не будут заданы конкретные)
+        if (bt.value) {
+            if (bt.skinBgActive != null)    bg = bt.skinBgActive;
+            if (bt.icoActive != null)       ico = bt.icoActive;
+            if (bt.labelActive != null)     label = bt.labelActive;
+        }
+
         // Конкретные скины:
-        if (Utils.eq(bt.state, ButtonState.HOVER)) {
-            if (bt.skinBgHover != null)      bg = bt.skinBgHover;
-            if (bt.labelHover != null)       label = bt.labelHover;
-            if (bt.icoHover != null)         ico = bt.icoHover;
+        if (Utils.eq(bt.state, ToggleButtonState.HOVER)) {
+            if (bt.skinBgHover != null)     bg = bt.skinBgHover;
+            if (bt.labelHover != null)      label = bt.labelHover;
+            if (bt.icoHover != null)        ico = bt.icoHover;
         }
-        else if (Utils.eq(bt.state, ButtonState.PRESS)) {
-            if (bt.skinBgPress != null)      bg = bt.skinBgPress;
-            if (bt.labelPress != null)       label = bt.labelPress;
-            if (bt.icoPress != null)         ico = bt.icoPress;
+        else if (Utils.eq(bt.state, ToggleButtonState.PRESS)) {
+            if (bt.skinBgPress != null)     bg = bt.skinBgPress;
+            if (bt.labelPress != null)      label = bt.labelPress;
+            if (bt.icoPress != null)        ico = bt.icoPress;
         }
-        else if (Utils.eq(bt.state, ButtonState.DISABLED)) {
-            if (bt.skinBgDisable != null)    bg = bt.skinBgDisable;
-            if (bt.labelDisable != null)     label = bt.labelDisable;
-            if (bt.icoDisable != null)       ico = bt.icoDisable;
+        else if (Utils.eq(bt.state, ToggleButtonState.DISABLED)) {
+            if (bt.skinBgDisable != null)   bg = bt.skinBgDisable;
+            if (bt.labelDisable != null)    label = bt.labelDisable;
+            if (bt.icoDisable != null)      ico = bt.icoDisable;
+        }
+        else if (Utils.eq(bt.state, ToggleButtonState.ACTIVE_HOVER)) {
+            if (bt.skinBgActiveHover != null)   bg = bt.skinBgActiveHover;
+            if (bt.labelActiveHover != null)    label = bt.labelActiveHover;
+            if (bt.icoActiveHover != null)      ico = bt.icoActiveHover;
+        }
+        else if (Utils.eq(bt.state, ToggleButtonState.ACTIVE_PRESS)) {
+            if (bt.skinBgActivePress != null)   bg = bt.skinBgActivePress;
+            if (bt.labelActivePress != null)    label = bt.labelActivePress;
+            if (bt.icoActivePress != null)      ico = bt.icoActivePress;
+        }
+        else if (Utils.eq(bt.state, ToggleButtonState.ACTIVE_DISABLED)) {
+            if (bt.skinBgActiveDisable != null)   bg = bt.skinBgActiveDisable;
+            if (bt.labelActiveDisable != null)    label = bt.labelActiveDisable;
+            if (bt.icoActiveDisable != null)      ico = bt.icoActiveDisable;
         }
         
         // Отображение:
@@ -680,11 +980,15 @@ class Button extends Component
      * @param bt Настраиваемая кнопка.
      * @return Параметры для позицианирования.
      */
-    static public function basePos(bt:Button) {
+    static public function basePos(bt:ToggleButton) {
         Utils.size(bt.skinBg, bt.w, bt.h);
         Utils.size(bt.skinBgHover, bt.w, bt.h);
         Utils.size(bt.skinBgPress, bt.w, bt.h);
         Utils.size(bt.skinBgDisable, bt.w, bt.h);
+        Utils.size(bt.skinBgActive, bt.w, bt.h);
+        Utils.size(bt.skinBgActiveHover, bt.w, bt.h);
+        Utils.size(bt.skinBgActivePress, bt.w, bt.h);
+        Utils.size(bt.skinBgActiveDisable, bt.w, bt.h);
 
         // Используемые значения:
         var p =
@@ -705,8 +1009,20 @@ class Button extends Component
             if (bt.padding.bottom != null)  p.pb = bt.padding.bottom;
         }
 
+        // Промежуточное состояние:
+        if (bt.value) {
+            if (Utils.noeq(bt.icoActive, null))        p.ico = bt.icoActive;
+            if (Utils.noeq(bt.labelActive, null))      p.label = bt.labelActive;
+            if (Utils.noeq(bt.paddingActive, null)) {
+                if (bt.paddingActive.top != null)      p.pt = bt.paddingActive.top;
+                if (bt.paddingActive.left != null)     p.pl = bt.paddingActive.left;
+                if (bt.paddingActive.right != null)    p.pr = bt.paddingActive.right;
+                if (bt.paddingActive.bottom != null)   p.pb = bt.paddingActive.bottom;
+            }
+        }
+
         // Состояние:
-        if (Utils.eq(bt.state, ButtonState.DISABLED)) { // Выключено
+        if (Utils.eq(bt.state, ToggleButtonState.DISABLED)) { // Выключено
             if (Utils.noeq(bt.icoDisable, null))        p.ico = bt.icoDisable;
             if (Utils.noeq(bt.labelDisable, null))      p.label = bt.labelDisable;
             if (Utils.noeq(bt.paddingDisable, null)) {
@@ -716,7 +1032,7 @@ class Button extends Component
                 if (bt.paddingDisable.bottom != null)   p.pb = bt.paddingDisable.bottom;
             }
         }
-        else if (Utils.eq(bt.state, ButtonState.HOVER)) { // Наведение
+        else if (Utils.eq(bt.state, ToggleButtonState.HOVER)) { // Наведение
             if (Utils.noeq(bt.icoHover, null))          p.ico = bt.icoHover;
             if (Utils.noeq(bt.labelHover, null))        p.label = bt.labelHover;
             if (Utils.noeq(bt.paddingHover, null)) {
@@ -726,7 +1042,7 @@ class Button extends Component
                 if (bt.paddingHover.bottom != null)     p.pb = bt.paddingHover.bottom;
             }
         }
-        else if (Utils.eq(bt.state, ButtonState.PRESS)) { // Нажатие
+        else if (Utils.eq(bt.state, ToggleButtonState.PRESS)) { // Нажатие
             if (Utils.noeq(bt.icoPress, null))          p.ico = bt.icoPress;
             if (Utils.noeq(bt.labelPress, null))        p.label = bt.labelPress;
             if (Utils.noeq(bt.paddingPress, null)) {
@@ -734,6 +1050,36 @@ class Button extends Component
                 if (bt.paddingPress.left != null)       p.pl = bt.paddingPress.left;
                 if (bt.paddingPress.right != null)      p.pr = bt.paddingPress.right;
                 if (bt.paddingPress.bottom != null)     p.pb = bt.paddingPress.bottom;
+            }
+        }
+        else if (Utils.eq(bt.state, ToggleButtonState.ACTIVE_HOVER)) { // Наведение (Включена)
+            if (Utils.noeq(bt.icoActiveHover, null))    p.ico = bt.icoActiveHover;
+            if (Utils.noeq(bt.labelActiveHover, null))  p.label = bt.labelActiveHover;
+            if (Utils.noeq(bt.paddingActiveHover, null)) {
+                if (bt.paddingActiveHover.top != null)        p.pt = bt.paddingActiveHover.top;
+                if (bt.paddingActiveHover.left != null)       p.pl = bt.paddingActiveHover.left;
+                if (bt.paddingActiveHover.right != null)      p.pr = bt.paddingActiveHover.right;
+                if (bt.paddingActiveHover.bottom != null)     p.pb = bt.paddingActiveHover.bottom;
+            }
+        }
+        else if (Utils.eq(bt.state, ToggleButtonState.ACTIVE_PRESS)) { // Нажатие (Включена)
+            if (Utils.noeq(bt.icoActivePress, null))          p.ico = bt.icoActivePress;
+            if (Utils.noeq(bt.labelActivePress, null))        p.label = bt.labelActivePress;
+            if (Utils.noeq(bt.paddingActivePress, null)) {
+                if (bt.paddingActivePress.top != null)        p.pt = bt.paddingActivePress.top;
+                if (bt.paddingActivePress.left != null)       p.pl = bt.paddingActivePress.left;
+                if (bt.paddingActivePress.right != null)      p.pr = bt.paddingActivePress.right;
+                if (bt.paddingActivePress.bottom != null)     p.pb = bt.paddingActivePress.bottom;
+            }
+        }
+        else if (Utils.eq(bt.state, ToggleButtonState.ACTIVE_DISABLED)) { // Выключена (Включена)
+            if (Utils.noeq(bt.icoActiveDisable, null))        p.ico = bt.icoActiveDisable;
+            if (Utils.noeq(bt.labelActiveDisable, null))      p.label = bt.labelActiveDisable;
+            if (Utils.noeq(bt.paddingActiveDisable, null)) {
+                if (bt.paddingActiveDisable.top != null)      p.pt = bt.paddingActiveDisable.top;
+                if (bt.paddingActiveDisable.left != null)     p.pl = bt.paddingActiveDisable.left;
+                if (bt.paddingActiveDisable.right != null)    p.pr = bt.paddingActiveDisable.right;
+                if (bt.paddingActiveDisable.bottom != null)   p.pb = bt.paddingActiveDisable.bottom;
             }
         }
 
@@ -749,22 +1095,37 @@ class Button extends Component
     /**
      * Иконка над текстом.
      */
-    static public var icoTop:SizeUpdater<Button> = function(bt) {
+    static public var icoTop:SizeUpdater<ToggleButton> = function(bt) {
         showLayers([
             bt.skinBg,
             bt.skinBgHover,
             bt.skinBgPress,
             bt.skinBgDisable,
 
+            bt.skinBgActive,
+            bt.skinBgActiveHover,
+            bt.skinBgActivePress,
+            bt.skinBgActiveDisable,
+
             bt.label,
             bt.labelHover,
             bt.labelPress,
             bt.labelDisable,
 
+            bt.labelActive,
+            bt.labelActiveHover,
+            bt.labelActivePress,
+            bt.labelActiveDisable,
+
             bt.ico,
             bt.icoHover,
             bt.icoPress,
             bt.icoDisable,
+
+            bt.icoActive,
+            bt.icoActiveHover,
+            bt.icoActivePress,
+            bt.icoActiveDisable,
         ], bt);
     }
 
@@ -772,22 +1133,37 @@ class Button extends Component
      * Иконка под текстом.
      * Используется по умолчанию.
      */
-    static public var icoDown:SizeUpdater<Button> = function(bt) {
+    static public var icoDown:SizeUpdater<ToggleButton> = function(bt) {
         showLayers([
             bt.skinBg,
             bt.skinBgHover,
             bt.skinBgPress,
             bt.skinBgDisable,
 
+            bt.skinBgActive,
+            bt.skinBgActiveHover,
+            bt.skinBgActivePress,
+            bt.skinBgActiveDisable,
+
             bt.ico,
             bt.icoHover,
             bt.icoPress,
             bt.icoDisable,
 
+            bt.icoActive,
+            bt.icoActiveHover,
+            bt.icoActivePress,
+            bt.icoActiveDisable,
+
             bt.label,
             bt.labelHover,
             bt.labelPress,
             bt.labelDisable,
+
+            bt.labelActive,
+            bt.labelActiveHover,
+            bt.labelActivePress,
+            bt.labelActiveDisable,
         ], bt);
     }
 
@@ -809,7 +1185,7 @@ class Button extends Component
      * +--------------------+ 
      * ```
      */
-    static public var pos1:SizeUpdater<Button> = function(bt) {
+    static public var pos1:SizeUpdater<ToggleButton> = function(bt) {
         var p = basePos(bt);
 
         // Позицианирование:
@@ -854,7 +1230,7 @@ class Button extends Component
      * +--------------------+ 
      * ```
      */
-    static public var pos2:SizeUpdater<Button> = function(bt) {
+    static public var pos2:SizeUpdater<ToggleButton> = function(bt) {
         var p = basePos(bt);
 
         // Позицианирование:
@@ -899,7 +1275,7 @@ class Button extends Component
      * +--------------------+ 
      * ```
      */
-    static public var pos3:SizeUpdater<Button> = function(bt) {
+    static public var pos3:SizeUpdater<ToggleButton> = function(bt) {
         var p = basePos(bt);
 
         // Позицианирование:
@@ -944,7 +1320,7 @@ class Button extends Component
      * +--------------------+ 
      * ```
      */
-    static public var pos4:SizeUpdater<Button> = function(bt) {
+    static public var pos4:SizeUpdater<ToggleButton> = function(bt) {
         var p = basePos(bt);
 
         // Позицианирование:
@@ -989,7 +1365,7 @@ class Button extends Component
      * +--------------------+ 
      * ```
      */
-    static public var pos5:SizeUpdater<Button> = function(bt) {
+    static public var pos5:SizeUpdater<ToggleButton> = function(bt) {
         var p = basePos(bt);
 
         // Позицианирование:
@@ -1034,7 +1410,7 @@ class Button extends Component
      * +--------------------+ 
      * ```
      */
-    static public var pos6:SizeUpdater<Button> = function(bt) {
+    static public var pos6:SizeUpdater<ToggleButton> = function(bt) {
         var p = basePos(bt);
 
         // Позицианирование:
@@ -1079,7 +1455,7 @@ class Button extends Component
      * +--------------------+ 
      * ```
      */
-    static public var pos7:SizeUpdater<Button> = function(bt) {
+    static public var pos7:SizeUpdater<ToggleButton> = function(bt) {
         var p = basePos(bt);
 
         // Позицианирование:
@@ -1124,7 +1500,7 @@ class Button extends Component
      * +--------------------+ 
      * ```
      */
-    static public var pos8:SizeUpdater<Button> = function(bt) {
+    static public var pos8:SizeUpdater<ToggleButton> = function(bt) {
         var p = basePos(bt);
         
         // Позицианирование:
@@ -1169,7 +1545,7 @@ class Button extends Component
      * +--------------------+ 
      * ```
      */
-    static public var pos9:SizeUpdater<Button> = function(bt) {
+    static public var pos9:SizeUpdater<ToggleButton> = function(bt) {
         var p = basePos(bt);
 
         // Позицианирование:
@@ -1204,16 +1580,16 @@ class Button extends Component
 }
 
 /**
- * Состояние кнопки.
+ * Состояние зажимной кнопки.
  * Описывает все возможные состояния в которых может находиться кнопка.
  */
-@:enum abstract ButtonState(Int) to Int
+@:enum abstract ToggleButtonState(Int) to Int
 {
-	/**
+    /**
      * Нормальное состояние.
-	 */
+     */
     var NORMAL = 0;
-    
+
     /**
      * Наведение на кнопку.
      */
@@ -1228,63 +1604,24 @@ class Button extends Component
      * Кнопка выключена.
      */
     var DISABLED = 3;
-}
-
-/**
- * Параметры настройки двойного клика.
- */
-typedef DoubleClickParams =
-{
-    /**
-     * Двойное нажатие включено.
-     * Если `true` - Кнопка будет посылать события двойные нажатия: `Event.DOUBLE_CLICK`.
-     * 
-     * По умолчанию: `false` (Выключено)
-     */
-    var enabled:Bool;
 
     /**
-     * Максимальное время между двумя кликами. (mc)
-     * 
-     * По умолчанию: `250` (Четверть секунды)
+     * Активная кнопка в нормальном состоянии.
      */
-    var time:Int;
+    var ACTIVE_NORMAL = 10;
 
     /**
-     * Максимальная дистанция между кликами. (px)
-     * 
-     * Позволяет более тонко настроить срабатывание двойного нажатия,
-     * когда между кликами бывает небольшой зазор из-за смещения курсора.
-     * 
-     * По умолчанию: `10`
+     * Активная кнопка при наведении.
      */
-    var dist:Float;
-}
-
-/**
- * Параметры настройки автоматического нажатия.
- */
-typedef AutoPressParams =
-{
-    /**
-     * Авто нажатие включено.
-     * Если `true` - Кнопка будет посылать события нажатия при длительном нажатии на кнопку: `Event.PRESS`.
-     * 
-     * По умолчанию: `false` (Выключено)
-     */
-    var enabled:Bool;
+    var ACTIVE_HOVER = 11;
 
     /**
-     * Задержка после первого нажатия и перед запуском отправки событий. (mc)
-     * 
-     * По умолчанию: `250` (Четверть секунды)
+     * Активная кнопка нажата.
      */
-    var delay:Int;
+    var ACTIVE_PRESS = 12;
 
     /**
-     * Интервал отправки событий. (mc)
-     * 
-     * По умолчанию: `25` (40 Раз в секунду)
+     * Активная кнопка в выключенном состоянии.
      */
-    var interval:Int;
+    var ACTIVE_DISABLED = 13;
 }
