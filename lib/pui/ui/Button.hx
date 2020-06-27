@@ -138,8 +138,6 @@ class Button extends Component
         if (!isActualInput(e))
             return;
         
-        isPress = false;
-
         // Автонажатие:
         if (autopressInterval > 0) {
             Browser.window.clearInterval(autopressInterval);
@@ -149,7 +147,12 @@ class Button extends Component
             Browser.window.clearTimeout(autopressTimeout);
             autopressTimeout = 0;
         }
-        Event.fire(Event.CLICK, this);
+
+        if (isPress) {
+            isPress = false;
+            Event.fire(Event.CLICK, this);
+        }
+        
         updateState();
     }
     private function onUpOutside(e:InteractionEvent):Void {

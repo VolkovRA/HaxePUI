@@ -88,9 +88,12 @@ class ToggleButton extends Component
         if (!isActualInput(e))
             return;
         
-        isPress = false;
-        value = !value;
-        Event.fire(Event.CLICK, this);
+        if (isPress) {
+            isPress = false;
+            value = !value;
+            Event.fire(Event.CLICK, this);
+        }
+        
         updateState();
     }
     private function onUpOutside(e:InteractionEvent):Void {
