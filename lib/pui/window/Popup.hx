@@ -405,30 +405,28 @@ class Popup extends Container
         // Шапка:
         var item:Dynamic = w.head;
         if (item != null) {
-            if (item.componentType == Label.TYPE)
-                Label.setText(item, title);
+            if (item.text != null)
+                Reflect.setProperty(item, "text", title);
             else if (item.labelTitle)
-                Label.setText(item.labelTitle, title);
+                Reflect.setProperty(item.labelTitle, "text", title);
         }
 
         // Тело:
         item = w.body;
         if (item != null) {
-            if (item.componentType == Label.TYPE)
-                Label.setText(item, message);
-            else if (item.labelMessage)
-                Label.setText(item.labelMessage, message);
+            if (item.text != null)
+                Reflect.setProperty(item, "text", message);
+            else if (item.labelTitle)
+                Reflect.setProperty(item.labelMessage, "text", message);
         }
 
         // Футер:
         item = w.footer;
         if (item != null) {
-            if (item.componentType == Label.TYPE)
-                Label.setText(item, ok);
-            else if (item.componentType == Button.TYPE)
-                Button.setText(item, ok);
+            if (item.text != null)
+                Reflect.setProperty(item, "text", ok);
             else if (item.buttonOK)
-                Button.setText(item.buttonOK, ok);
+                Reflect.setProperty(item.buttonOK, "text", ok);
         }
 
         add(w);
@@ -448,36 +446,35 @@ class Popup extends Container
         w.style = defaultWindowConfirm;
         w.update(true);
 
+
         // Шапка:
         var item:Dynamic = w.head;
         if (item != null) {
-            if (item.componentType == Label.TYPE)
-                Label.setText(item, title);
+            if (item.text != null)
+                Reflect.setProperty(item, "text", title);
             else if (item.labelTitle)
-                Label.setText(item.labelTitle, title);
+                Reflect.setProperty(item.labelTitle, "text", title);
         }
 
         // Тело:
         item = w.body;
         if (item != null) {
-            if (item.componentType == Label.TYPE)
-                Label.setText(item, message);
-            else if (item.labelMessage)
-                Label.setText(item.labelMessage, message);
+            if (item.text != null)
+                Reflect.setProperty(item, "text", message);
+            else if (item.labelTitle)
+                Reflect.setProperty(item.labelMessage, "text", message);
         }
 
         // Футер:
         item = w.footer;
         if (item != null) {
-            if (item.componentType == Label.TYPE)
-                Label.setText(item, ok);
-            else if (item.componentType == Button.TYPE)
-                Button.setText(item, ok);
+            if (item.text != null)
+                Reflect.setProperty(item, "text", ok);
             else if (item.buttonOK)
-                Button.setText(item.buttonOK, ok);
+                Reflect.setProperty(item.buttonOK, "text", ok);
 
             if (item.buttonCancel)
-                Button.setText(item.buttonCancel, cancel);
+                Reflect.setProperty(item.buttonCancel, "text", cancel);
         }
 
         add(w);

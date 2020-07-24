@@ -341,18 +341,7 @@ class Label extends Component
         return Syntax.code( '"[" + {0}.componentType + {0}.componentID + " style=\\"" + {0}.style + "\\" text=\\"" + ({0}.text.length>50?({0}.text.substring(0,50)+"..."):{0}.text) +  "\\"]"', this);
     }
 
-    /**
-     * Установка значения свойству text указанного компонента.
-     * 
-     * Геттеры и сеттеры в хаксе конченные, без приведения к типу они
-     * нихрена не вызываются! Поэтому этот метод существует.
-     * 
-     * @param label Компонент для присвоения.
-     * @param text Новый текст.
-     */
-    public static inline function setText(label:Label, text:String):Void {
-        label.text = text;
-    }
+
 
     /////////////////////////////////
     //   ПОЗИЦИАНИРОВАНИЕ И СЛОИ   //
