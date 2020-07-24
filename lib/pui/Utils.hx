@@ -1,5 +1,6 @@
 package pui;
 
+import pui.ui.Button;
 import js.Syntax;
 import js.lib.Object;
 import pixi.core.display.Container;
@@ -331,6 +332,36 @@ class Utils
      */
     public static inline function createArray(length:Int):Dynamic {
         return Syntax.code('new Array({0})', length);
+    }
+
+    /**
+     * Проверить значение на строковой тип данных.
+     * Возвращает `true`, если переданное значение является строкой.
+     * @param value Проверяемое значение.
+     * @return Результат проверки.
+     */
+    public static inline function isString(value:Dynamic):Bool {
+        return Syntax.code('(typeof {0} === "string")', value);
+    }
+
+    /**
+     * Проверить значение на числовой тип данных.
+     * Возвращает `true`, если переданное значение является числом, `NaN` или `Infinity`.
+     * @param value Проверяемое значение.
+     * @return Результат проверки.
+     */
+    public static inline function isNumber(value:Dynamic):Bool {
+        return Syntax.code('(typeof {0} === "number")', value);
+    }
+
+    /**
+     * Проверить значение на булевый тип данных.
+     * Возвращает `true`, если переданное значение является булевым типом данных.
+     * @param value Проверяемое значение.
+     * @return Результат проверки.
+     */
+    public static inline function isBool(value:Dynamic):Bool {
+        return Syntax.code('(typeof {0} === "boolean")', value);
     }
 
     /**

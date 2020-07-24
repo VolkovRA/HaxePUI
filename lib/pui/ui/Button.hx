@@ -595,7 +595,7 @@ class Button extends Component
 
     /**
      * Выгрузить кнопку.
-	 */
+     */
     override function destroy(?options:EitherType<Bool, DestroyOptions>) {
         Utils.destroySkin(label, options);
         Utils.destroySkin(labelHover, options);
@@ -625,6 +625,19 @@ class Button extends Component
     ////////////////////////////////
     //   ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ   //
     ////////////////////////////////
+
+    /**
+     * Установка значения свойству text указанного компонента.
+     * 
+     * Геттеры и сеттеры в хаксе конченные, без приведения к типу они
+     * нихрена не вызываются! Поэтому этот метод существует.
+     * 
+     * @param label Компонент для присвоения.
+     * @param text Новый текст.
+     */
+    public static inline function setText(button:Button, text:String):Void {
+        button.text = text;
+    }
 
     /**
      * Отображение слоёв в заданном порядке.

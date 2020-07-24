@@ -55,6 +55,11 @@ class Event
     static public inline var DRAG = "puiDrag";
 
     /**
+     * Закрытие.
+     */
+    static public inline var CLOSE = "puiClose";
+
+    /**
      * Создать событие.
      * @param type Тип события.
      * @param target Источник события.
