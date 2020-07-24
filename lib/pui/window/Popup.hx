@@ -405,8 +405,8 @@ class Popup extends Container
         // Шапка:
         var item:Dynamic = w.head;
         if (item != null) {
-            if (item.text != null)
-                item.text = title;
+            if (item.componentType == Label.TYPE)
+                Label.setText(item, title);
             else if (item.labelTitle)
                 Label.setText(item.labelTitle, title);
         }
@@ -414,18 +414,20 @@ class Popup extends Container
         // Тело:
         item = w.body;
         if (item != null) {
-            if (item.text != null)
-                item.text = message;
+            if (item.componentType == Label.TYPE)
+                Label.setText(item, message);
             else if (item.labelMessage)
-                Label.setText(item.labelMessage, title);
+                Label.setText(item.labelMessage, message);
         }
 
         // Футер:
         item = w.footer;
         if (item != null) {
-            if (item.text != null)
-                item.text = ok;
-            else if (item.buttonOK != null)
+            if (item.componentType == Label.TYPE)
+                Label.setText(item, ok);
+            else if (item.componentType == Button.TYPE)
+                Button.setText(item, ok);
+            else if (item.buttonOK)
                 Button.setText(item.buttonOK, ok);
         }
 
@@ -449,8 +451,8 @@ class Popup extends Container
         // Шапка:
         var item:Dynamic = w.head;
         if (item != null) {
-            if (item.text != null)
-                item.text = title;
+            if (item.componentType == Label.TYPE)
+                Label.setText(item, title);
             else if (item.labelTitle)
                 Label.setText(item.labelTitle, title);
         }
@@ -458,21 +460,23 @@ class Popup extends Container
         // Тело:
         item = w.body;
         if (item != null) {
-            if (item.text != null)
-                item.text = message;
+            if (item.componentType == Label.TYPE)
+                Label.setText(item, message);
             else if (item.labelMessage)
-                Label.setText(item.labelMessage, title);
+                Label.setText(item.labelMessage, message);
         }
 
         // Футер:
         item = w.footer;
         if (item != null) {
-            if (item.text != null)
-                item.text = ok;
-            else if (item.buttonOK != null)
+            if (item.componentType == Label.TYPE)
+                Label.setText(item, ok);
+            else if (item.componentType == Button.TYPE)
+                Button.setText(item, ok);
+            else if (item.buttonOK)
                 Button.setText(item.buttonOK, ok);
 
-            if (item.buttonCancel != null)
+            if (item.buttonCancel)
                 Button.setText(item.buttonCancel, cancel);
         }
 
