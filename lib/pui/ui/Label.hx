@@ -507,80 +507,80 @@ class Label extends Component
         if (Utils.noeq(label.skinText, null)) {
             if (label.enabled) {
                 if (Utils.eq(label.alignX, AlignX.RIGHT))       label.skinText.x = Math.round(pl + label.w - mst.maxLineWidth - pr);
-                else if (Utils.eq(label.alignX, AlignX.CENTER)) label.skinText.x = Math.round(pl + (label.w - mst.maxLineWidth) / 2);
+                else if (Utils.eq(label.alignX, AlignX.CENTER)) label.skinText.x = Math.round(pl + (label.w - mst.maxLineWidth - pl - pr) / 2);
                 else                                            label.skinText.x = Math.round(pl);
                 
                 if (Utils.eq(label.alignY, AlignY.BOTTOM))      label.skinText.y = Math.round(pt + label.h - mst.lines.length * mst.lineHeight - pb);
-                else if (Utils.eq(label.alignY, AlignY.CENTER)) label.skinText.y = Math.round(pt + (label.h - mst.lines.length * mst.lineHeight) / 2);
+                else if (Utils.eq(label.alignY, AlignY.CENTER)) label.skinText.y = Math.round(pt + (label.h - mst.lines.length * mst.lineHeight - pt - pb) / 2);
                 else                                            label.skinText.y = Math.round(pt);
             }
             else {
                 if (Utils.eq(label.alignX, AlignX.RIGHT))       label.skinText.x = Math.round(pl2 + label.w - mst.maxLineWidth - pr2);
-                else if (Utils.eq(label.alignX, AlignX.CENTER)) label.skinText.x = Math.round(pl2 + (label.w - mst.maxLineWidth) / 2);
+                else if (Utils.eq(label.alignX, AlignX.CENTER)) label.skinText.x = Math.round(pl2 + (label.w - mst.maxLineWidth - pl2 - pr2) / 2);
                 else                                            label.skinText.x = Math.round(pl2);
                 
                 if (Utils.eq(label.alignY, AlignY.BOTTOM))      label.skinText.y = Math.round(pt2 + label.h - mst.lines.length * mst.lineHeight - pb2);
-                else if (Utils.eq(label.alignY, AlignY.CENTER)) label.skinText.y = Math.round(pt2 + (label.h - mst.lines.length * mst.lineHeight) / 2);
+                else if (Utils.eq(label.alignY, AlignY.CENTER)) label.skinText.y = Math.round(pt2 + (label.h - mst.lines.length * mst.lineHeight - pt2 - pb2) / 2);
                 else                                            label.skinText.y = Math.round(pt2);
             }
         }
         if (Utils.noeq(label.skinTextDisable, null)) {
             if (label.enabled) {
                 if (Utils.eq(label.alignX, AlignX.RIGHT))       label.skinTextDisable.x = Math.round(pl + label.w - mstd.maxLineWidth - pr);
-                else if (Utils.eq(label.alignX, AlignX.CENTER)) label.skinTextDisable.x = Math.round(pl + (label.w - mstd.maxLineWidth) / 2);
+                else if (Utils.eq(label.alignX, AlignX.CENTER)) label.skinTextDisable.x = Math.round(pl + (label.w - mstd.maxLineWidth - pl - pr) / 2);
                 else                                            label.skinTextDisable.x = Math.round(pl);
                 
                 if (Utils.eq(label.alignY, AlignY.BOTTOM))      label.skinTextDisable.y = Math.round(pt + label.h - mstd.lines.length * mstd.lineHeight - pb);
-                else if (Utils.eq(label.alignY, AlignY.CENTER)) label.skinTextDisable.y = Math.round(pt + (label.h - mstd.lines.length * mstd.lineHeight) / 2);
+                else if (Utils.eq(label.alignY, AlignY.CENTER)) label.skinTextDisable.y = Math.round(pt + (label.h - mstd.lines.length * mstd.lineHeight - pt - pb) / 2);
                 else                                            label.skinTextDisable.y = Math.round(pt);
             }
             else {
                 if (Utils.eq(label.alignX, AlignX.RIGHT))       label.skinTextDisable.x = Math.round(pl2 + label.w - mstd.maxLineWidth - pr2);
-                else if (Utils.eq(label.alignX, AlignX.CENTER)) label.skinTextDisable.x = Math.round(pl2 + (label.w - mstd.maxLineWidth) / 2);
+                else if (Utils.eq(label.alignX, AlignX.CENTER)) label.skinTextDisable.x = Math.round(pl2 + (label.w - mstd.maxLineWidth - pl2 - pr2) / 2);
                 else                                            label.skinTextDisable.x = Math.round(pl2);
                 
                 if (Utils.eq(label.alignY, AlignY.BOTTOM))      label.skinTextDisable.y = Math.round(pt2 + label.h - mstd.lines.length * mstd.lineHeight - pb2);
-                else if (Utils.eq(label.alignY, AlignY.CENTER)) label.skinTextDisable.y = Math.round(pt2 + (label.h - mstd.lines.length * mstd.lineHeight) / 2);
+                else if (Utils.eq(label.alignY, AlignY.CENTER)) label.skinTextDisable.y = Math.round(pt2 + (label.h - mstd.lines.length * mstd.lineHeight - pt2 - pb2) / 2);
                 else                                            label.skinTextDisable.y = Math.round(pt2);
             }
         }
         if (Utils.noeq(label.skinBitmapText, null)) {
             if (label.enabled) {
                 if (Utils.eq(label.alignX, AlignX.RIGHT))       label.skinBitmapText.x = Math.round(pl + label.w - label.skinBitmapText.width - pr);
-                else if (Utils.eq(label.alignX, AlignX.CENTER)) label.skinBitmapText.x = Math.round(pl + (label.w - label.skinBitmapText.width) / 2);
+                else if (Utils.eq(label.alignX, AlignX.CENTER)) label.skinBitmapText.x = Math.round(pl + (label.w - label.skinBitmapText.width - pl - pr) / 2);
                 else                                            label.skinBitmapText.x = Math.round(pl);
                 
                 if (Utils.eq(label.alignY, AlignY.BOTTOM))      label.skinBitmapText.y = Math.round(pt + label.h - label.skinBitmapText.height - pb);
-                else if (Utils.eq(label.alignY, AlignY.CENTER)) label.skinBitmapText.y = Math.round(pt + (label.h - label.skinBitmapText.height) / 2);
+                else if (Utils.eq(label.alignY, AlignY.CENTER)) label.skinBitmapText.y = Math.round(pt + (label.h - label.skinBitmapText.height - pt - pb) / 2);
                 else                                            label.skinBitmapText.y = Math.round(pt);
             }
             else {
                 if (Utils.eq(label.alignX, AlignX.RIGHT))       label.skinBitmapText.x = Math.round(pl2 + label.w - label.skinBitmapText.width - pr2);
-                else if (Utils.eq(label.alignX, AlignX.CENTER)) label.skinBitmapText.x = Math.round(pl2 + (label.w - label.skinBitmapText.width) / 2);
+                else if (Utils.eq(label.alignX, AlignX.CENTER)) label.skinBitmapText.x = Math.round(pl2 + (label.w - label.skinBitmapText.width - pl2 - pr2) / 2);
                 else                                            label.skinBitmapText.x = Math.round(pl2);
                 
                 if (Utils.eq(label.alignY, AlignY.BOTTOM))      label.skinBitmapText.y = Math.round(pt2 + label.h - label.skinBitmapText.height - pb2);
-                else if (Utils.eq(label.alignY, AlignY.CENTER)) label.skinBitmapText.y = Math.round(pt2 + (label.h - label.skinBitmapText.height) / 2);
+                else if (Utils.eq(label.alignY, AlignY.CENTER)) label.skinBitmapText.y = Math.round(pt2 + (label.h - label.skinBitmapText.height - pt2 - pb2) / 2);
                 else                                            label.skinBitmapText.y = Math.round(pt2);
             }
         }
         if (Utils.noeq(label.skinBitmapTextDisable, null)) {
             if (label.enabled) {
                 if (Utils.eq(label.alignX, AlignX.RIGHT))       label.skinBitmapTextDisable.x = Math.round(pl + label.w - label.skinBitmapTextDisable.width - pr);
-                else if (Utils.eq(label.alignX, AlignX.CENTER)) label.skinBitmapTextDisable.x = Math.round(pl + (label.w - label.skinBitmapTextDisable.width) / 2);
+                else if (Utils.eq(label.alignX, AlignX.CENTER)) label.skinBitmapTextDisable.x = Math.round(pl + (label.w - label.skinBitmapTextDisable.width - pl - pr) / 2);
                 else                                            label.skinBitmapTextDisable.x = Math.round(pl);
                 
                 if (Utils.eq(label.alignY, AlignY.BOTTOM))      label.skinBitmapTextDisable.y = Math.round(pt + label.h - label.skinBitmapTextDisable.height - pb);
-                else if (Utils.eq(label.alignY, AlignY.CENTER)) label.skinBitmapTextDisable.y = Math.round(pt + (label.h - label.skinBitmapTextDisable.height) / 2);
+                else if (Utils.eq(label.alignY, AlignY.CENTER)) label.skinBitmapTextDisable.y = Math.round(pt + (label.h - label.skinBitmapTextDisable.height - pt - pb) / 2);
                 else                                            label.skinBitmapTextDisable.y = Math.round(pt);
             }
             else {
                 if (Utils.eq(label.alignX, AlignX.RIGHT))       label.skinBitmapTextDisable.x = Math.round(pl2 + label.w - label.skinBitmapTextDisable.width - pr2);
-                else if (Utils.eq(label.alignX, AlignX.CENTER)) label.skinBitmapTextDisable.x = Math.round(pl2 + (label.w - label.skinBitmapTextDisable.width) / 2);
+                else if (Utils.eq(label.alignX, AlignX.CENTER)) label.skinBitmapTextDisable.x = Math.round(pl2 + (label.w - label.skinBitmapTextDisable.width - pl2 - pr2) / 2);
                 else                                            label.skinBitmapTextDisable.x = Math.round(pl2);
                 
                 if (Utils.eq(label.alignY, AlignY.BOTTOM))      label.skinBitmapTextDisable.y = Math.round(pt2 + label.h - label.skinBitmapTextDisable.height - pb2);
-                else if (Utils.eq(label.alignY, AlignY.CENTER)) label.skinBitmapTextDisable.y = Math.round(pt2 + (label.h - label.skinBitmapTextDisable.height) / 2);
+                else if (Utils.eq(label.alignY, AlignY.CENTER)) label.skinBitmapTextDisable.y = Math.round(pt2 + (label.h - label.skinBitmapTextDisable.height - pt2 - pb2) / 2);
                 else                                            label.skinBitmapTextDisable.y = Math.round(pt2);
             }
         }
