@@ -3,6 +3,7 @@ package pui.window;
 import haxe.extern.EitherType;
 import pui.ui.Component;
 import pui.events.Event;
+import pixi.core.display.Container;
 import pixi.core.display.DisplayObject;
 
 /**
@@ -47,9 +48,9 @@ class Window extends Component
     //////////////////
 
     override function set_enabled(value:Bool):Bool {
-        if (Utils.noeq(head, null)) head.enabled = value;
-        if (Utils.noeq(body, null)) body.enabled = value;
-        if (Utils.noeq(footer, null)) footer.enabled = value;
+        if (Utils.noeq(head, null) && Reflect.hasField(head, "enabled")) Reflect.setProperty(head, "enabled", value);
+        if (Utils.noeq(body, null) && Reflect.hasField(body, "enabled")) Reflect.setProperty(body, "enabled", value);
+        if (Utils.noeq(footer, null) && Reflect.hasField(footer, "enabled")) Reflect.setProperty(footer, "enabled", value);
 
         return super.set_enabled(value);
     }
@@ -76,14 +77,14 @@ class Window extends Component
      * 
      * По умолчанию: `null` (Без заголовка)
      */
-    public var head(default, set):Component = null;
-    function set_head(value:Component):Component {
+    public var head(default, set):Container = null;
+    function set_head(value:Container):Container {
         if (value == head)
             return value;
         if (head != null && head.parent == this)
             removeChild(head);
-        if (value != null)
-            value.enabled = enabled;
+        if (value != null && Reflect.hasField(value, "enabled"))
+            Reflect.setProperty(value, "enabled", enabled);
         head = value;
         update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
         return value;
@@ -102,14 +103,14 @@ class Window extends Component
      * 
      * По умолчанию: `null` (Без тела)
      */
-    public var body(default, set):Component = null;
-    function set_body(value:Component):Component {
+    public var body(default, set):Container = null;
+    function set_body(value:Container):Container {
         if (value == body)
             return value;
         if (body != null && body.parent == this)
             removeChild(body);
-        if (value != null)
-            value.enabled = enabled;
+        if (value != null && Reflect.hasField(value, "enabled"))
+            Reflect.setProperty(value, "enabled", enabled);
         body = value;
         update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
         return value;
@@ -128,14 +129,14 @@ class Window extends Component
      * 
      * По умолчанию: `null` (Без подвала)
      */
-    public var footer(default, set):Component = null;
-    function set_footer(value:Component):Component {
+    public var footer(default, set):Container = null;
+    function set_footer(value:Container):Container {
         if (value == footer)
             return value;
         if (footer != null && footer.parent == this)
             removeChild(footer);
-        if (value != null)
-            value.enabled = enabled;
+        if (value != null && Reflect.hasField(value, "enabled"))
+            Reflect.setProperty(value, "enabled", enabled);
         footer = value;
         update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
         return value;
@@ -235,22 +236,46 @@ class Window extends Component
         var by:Float = 0;
         var wh = window.h;
         if (window.head != null) {
-            window.head.update(true);
-            window.head.w = window.w;
-            wh -= window.head.h;
-            by = window.head.h;
+            if (untyped window.head.componentType != null) {
+                var comp:Component = untyped window.head;
+                comp.w = window.w;
+                comp.update(true);
+                wh -= comp.h;
+                by = comp.h;
+            }
+            else {
+                window.head.width = window.w;
+                wh -= window.head.height;
+                by = window.head.height;
+            }
         }
         if (window.footer != null) {
-            window.footer.update(true);
-            window.footer.w = window.w;
-            window.footer.y = Math.round(window.h - window.footer.h);
-            wh -= window.footer.h;
+            if (untyped window.footer.componentType != null) {
+                var comp:Component = untyped window.footer;
+                comp.w = window.w;
+                comp.update(true);
+                comp.y = Math.round(window.h - comp.h);
+                wh -= comp.h;
+            }
+            else {
+                window.footer.width = window.w;
+                window.footer.y = Math.round(window.h - window.footer.height);
+                wh -= window.footer.height;
+            }
         }
         if (window.body != null) {
-            window.body.w = window.w;
-            window.body.h = Math.max(0, Math.round(wh));
-            window.body.y = Math.round(by);
-            window.body.update(true);
+            if (untyped window.body.componentType != null) {
+                var comp:Component = untyped window.body;
+                comp.w = window.w;
+                comp.h = Math.max(0, Math.round(wh));
+                comp.update(true);
+                comp.y = Math.round(by);
+            }
+            else {
+                window.body.width = window.w;
+                window.body.height = Math.max(0, Math.round(wh));
+                window.body.y = Math.round(by);
+            }
         }
     }
 }
