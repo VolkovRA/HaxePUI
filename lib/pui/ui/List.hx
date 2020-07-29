@@ -542,26 +542,28 @@ class List extends Scroller
                     }
                 Syntax.code('}'); // for end
                 
-                // По списку данных из отображаемого диапазоны:
+                // По списку данных из отображаемого диапазона:
                 // 1. Создаём новые вьюшки для тех, у кого их нет.
                 // 2. Обновляем отображение вьюшек.
-                index = index1;
-                while (index <= index2) {
-                    var item = list.at(index);
-                    var view = list.views[index];
-                    if (view == null) {
-                        view = list.getItemView();
-                        view.data = item;
-                        list.views[index] = view;
-                        list.content.addChild(view);
+                if (Utils.noeq(len,0)) {
+                    index = index1;
+                    while (index <= index2) {
+                        var item = list.at(index);
+                        var view = list.views[index];
+                        if (view == null) {
+                            view = list.getItemView();
+                            view.data = item;
+                            list.views[index] = view;
+                            list.content.addChild(view);
+                        }
+
+                        view.x = index * (list.viewsSize + list.viewsGap);
+                        view.y = 0;
+                        view.w = list.viewsSize;
+                        view.h = list.contentBounds.height;
+
+                        index ++;
                     }
-
-                    view.x = index * (list.viewsSize + list.viewsGap);
-                    view.y = 0;
-                    view.w = list.viewsSize;
-                    view.h = list.contentBounds.height;
-
-                    index ++;
                 }
             }
             else {
@@ -749,26 +751,28 @@ class List extends Scroller
                     }
                 Syntax.code('}'); // for end
                 
-                // По списку данных из отображаемого диапазоны:
+                // По списку данных из отображаемого диапазона:
                 // 1. Создаём новые вьюшки для тех, у кого их нет.
                 // 2. Обновляем отображение вьюшек.
                 index = index1;
-                while (index <= index2) {
-                    var item = list.at(index);
-                    var view = list.views[index];
-                    if (view == null) {
-                        view = list.getItemView();
-                        view.data = item;
-                        list.views[index] = view;
-                        list.content.addChild(view);
+                if (Utils.noeq(len,0)) {
+                    while (index <= index2) {
+                        var item = list.at(index);
+                        var view = list.views[index];
+                        if (view == null) {
+                            view = list.getItemView();
+                            view.data = item;
+                            list.views[index] = view;
+                            list.content.addChild(view);
+                        }
+
+                        view.x = 0;
+                        view.y = index * (list.viewsSize + list.viewsGap);
+                        view.w = list.contentBounds.width;
+                        view.h = list.viewsSize;
+
+                        index ++;
                     }
-
-                    view.x = 0;
-                    view.y = index * (list.viewsSize + list.viewsGap);
-                    view.w = list.contentBounds.width;
-                    view.h = list.viewsSize;
-
-                    index ++;
                 }
             }
             else {
