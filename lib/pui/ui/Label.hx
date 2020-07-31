@@ -56,7 +56,7 @@ class Label extends Component
      * 
      * По умолчанию: `""`. (Не может быть `null`)
      */
-    public var text(default, set):String;
+    public var text(default, set):String = "";
     function set_text(value:String):String {
         if (value == null) {
             if (Utils.eq(text, ""))

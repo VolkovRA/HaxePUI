@@ -299,6 +299,17 @@ class List extends Scroller
     public function clear():Void {
         isModified = true;
         items = new Array();
+
+        // Удаляем все вьюшки из отображения:
+        var index = null;
+        Syntax.code('for ({0} in {1}) {', index, views); // for in
+            var item:ListItem = views[index];
+            Utils.hide(content, item);
+            Utils.delete(views[index]);
+            item.data = null;
+            storeItemView(item);
+        Syntax.code('}'); // for end
+
         update(false, Component.UPDATE_LAYERS | Component.UPDATE_SIZE);
     }
 
