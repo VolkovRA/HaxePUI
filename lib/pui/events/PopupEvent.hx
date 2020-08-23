@@ -1,7 +1,7 @@
 package pui.events;
 
-import pixi.core.display.DisplayObject;
-import pixi.interaction.EventEmitter;
+import pixi.events.EventEmitter;
+import pixi.display.DisplayObject;
 
 /**
  * Событие менеджера всплывающих сообщений.

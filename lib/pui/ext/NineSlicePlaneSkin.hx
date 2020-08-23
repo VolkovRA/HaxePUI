@@ -1,8 +1,8 @@
 package pui.ext;
 
-import pixi.core.textures.Texture;
-import pixi.mesh.NineSlicePlane;
 import js.Syntax;
+import pixi.display.NineSlicePlane;
+import pixi.textures.Texture;
 
 /**
  * Девяти-фрагментный скин.

@@ -1,6 +1,6 @@
 package pui.events;
 
-import pixi.interaction.EventEmitter;
+import pixi.events.EventEmitter;
 
 /**
  * Событие промотки колёсиком мыши.

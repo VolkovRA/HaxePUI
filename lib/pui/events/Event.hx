@@ -1,6 +1,6 @@
 package pui.events;
 
-import pixi.interaction.EventEmitter;
+import pixi.events.EventEmitter;
 
 /**
  * Событие PUI.
@@ -96,7 +96,7 @@ class Event
      * @param target Источник события.
      * @return Новый объект события.
      */
-     static public function get(type:String, target:EventEmitter):Event {
+    static public function get(type:String, target:EventEmitter):Event {
         if (Utils.eq(poolLen, 0))
             return new Event(type, target);
 

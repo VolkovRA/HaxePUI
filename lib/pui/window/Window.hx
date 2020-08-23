@@ -1,10 +1,9 @@
 package pui.window;
 
 import haxe.extern.EitherType;
-import pui.ui.Component;
+import pixi.display.Container;
 import pui.events.Event;
-import pixi.core.display.Container;
-import pixi.core.display.DisplayObject;
+import pui.ui.Component;
 
 /**
  * Окно.
@@ -168,7 +167,7 @@ class Window extends Component
     /**
      * Выгрузить окно.
      */
-    override function destroy(?options:EitherType<Bool, DestroyOptions>) {
+    override function destroy(?options:EitherType<Bool, ContainerDestroyOptions>) {
         Utils.destroySkin(head, options);
         Utils.destroySkin(body, options);
         Utils.destroySkin(footer, options);

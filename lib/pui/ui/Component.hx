@@ -2,13 +2,12 @@ package pui.ui;
 
 import haxe.extern.EitherType;
 import js.lib.Error;
+import pixi.display.Container;
+import pixi.display.Graphics;
+import pixi.events.InteractionEvent;
 import pui.dom.Mouse;
 import pui.dom.PointerType;
 import pui.events.ComponentEvent;
-import pixi.core.display.Container;
-import pixi.core.display.DisplayObject;
-import pixi.core.graphics.Graphics;
-import pixi.interaction.InteractionEvent;
 
 /**
  * Компонент графического интерфейса пользователя.
@@ -723,7 +722,7 @@ class Component extends Container
      * @see https://pixijs.download/dev/docs/PIXI.Container.html#destroy
      */
     @:keep
-    override function destroy(?options:EitherType<Bool, DestroyOptions>) {
+    override function destroy(?options:EitherType<Bool, ContainerDestroyOptions>) {
         Utils.destroySkin(skinBg, options);
         Utils.destroySkin(skinBgDisable, options);
         Utils.destroySkin(skinDebug, options);

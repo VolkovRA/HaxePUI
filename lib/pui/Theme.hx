@@ -1,28 +1,28 @@
 package pui;
 
-import pui.ui.ToggleButton;
+import haxe.DynamicAccess;
 import js.Browser;
 import js.Syntax;
-import haxe.DynamicAccess;
+import pixi.Application;
+import pixi.display.Graphics;
+import pixi.display.Text;
+import pixi.events.EventEmitter;
+import pixi.events.PixiEvent;
+import pixi.geom.Point;
 import pui.ui.Button;
-import pui.ui.Label;
 import pui.ui.Component;
-import pui.ui.ScrollBar;
-import pui.ui.ProgressBar;
 import pui.ui.CheckBox;
-import pui.ui.Scroller;
+import pui.ui.ToggleButton;
+import pui.ui.Label;
 import pui.ui.List;
 import pui.ui.ListItem;
 import pui.ui.ListItemLabel;
-import pui.pixi.PixiEvent;
-import pui.events.WheelEvent;
+import pui.ui.ProgressBar;
+import pui.ui.ScrollBar;
+import pui.ui.Scroller;
 import pui.events.ThemeEvent;
+import pui.events.WheelEvent;
 import pui.geom.Vec2;
-import pixi.core.Application;
-import pixi.core.graphics.Graphics;
-import pixi.core.math.Point;
-import pixi.core.text.Text;
-import pixi.interaction.EventEmitter;
 
 /**
  * Тема оформления.

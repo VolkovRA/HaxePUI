@@ -1,10 +1,9 @@
 package pui.ui;
 
+import haxe.extern.EitherType;
+import pixi.display.Container;
 import pui.events.Event;
 import pui.ui.Component;
-import pixi.core.display.Container;
-import pixi.core.display.DisplayObject;
-import haxe.extern.EitherType;
 
 /**
  * Прогресс бар.
@@ -211,7 +210,7 @@ class ProgressBar extends Component
     /**
      * Выгрузить прогрессбар.
 	 */
-    override function destroy(?options:EitherType<Bool, DestroyOptions>) {
+    override function destroy(?options:EitherType<Bool, ContainerDestroyOptions>) {
         Utils.destroySkin(skinFill, options);
         Utils.destroySkin(skinFillDisable, options);
 

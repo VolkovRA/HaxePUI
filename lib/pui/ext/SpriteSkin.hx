@@ -1,8 +1,8 @@
 package pui.ext;
 
-import pixi.core.textures.Texture;
-import pixi.core.sprites.Sprite;
 import js.lib.Object;
+import pixi.display.Sprite;
+import pixi.textures.Texture;
 
 /**
  * Спрайтовый скин.

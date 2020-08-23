@@ -1,12 +1,11 @@
 package pui;
 
-import pui.ui.Button;
+import haxe.extern.EitherType;
 import js.Syntax;
 import js.lib.Object;
-import pixi.core.display.Container;
-import pixi.core.display.DisplayObject;
-import pixi.core.graphics.Graphics;
-import haxe.extern.EitherType;
+import pixi.display.Container;
+import pixi.display.DisplayObject;
+import pixi.display.Graphics;
 
 /**
  * Вспомогательные утилиты.
@@ -48,7 +47,7 @@ class Utils
      * @param skin Удаляемый скин.
      * @param options Опций вызова метода: `DisplayObject.destroy()`. 
      */
-    static public inline function destroySkin(skin:Container, ?options:EitherType<Bool,DestroyOptions>):Void {
+    static public inline function destroySkin(skin:Container, ?options:EitherType<Bool,ContainerDestroyOptions>):Void {
         Syntax.code('if ({0} != null){ {0}.destroy({1}); {0} = null; }', skin, options);
     }
 

@@ -1,7 +1,6 @@
 package pui.ext;
 
-import pixi.core.text.DefaultStyle;
-import pixi.core.text.TextStyle;
+import pixi.text.TextStyle;
 
 /**
  * Стили текста.
@@ -34,7 +33,7 @@ class TextStyleMeasure extends TextStyle
      * Создать новый стиль.
      * @param style Параметры по умолчанию.
      */
-    public function new(?style:DefaultStyleMeasure) {
+    public function new(?style:TextStyleMeasureOptions) {
         super(style);
     }
 
@@ -64,9 +63,9 @@ class TextStyleMeasure extends TextStyle
 /**
  * Параметры стилей.
  */
-typedef DefaultStyleMeasure =
+typedef TextStyleMeasureOptions =
 {
-    >DefaultStyle,
+    >TextStyleOptions,
 
     /**
      * Дополнительный размер занимаемой области текстом по ширине. (px)

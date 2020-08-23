@@ -1,4 +1,4 @@
--lib pixijs
+-lib pixi
 --class-path lib 
 --class-path src 
 -main Main

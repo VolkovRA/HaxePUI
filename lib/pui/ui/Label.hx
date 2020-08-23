@@ -1,14 +1,13 @@
 package pui.ui;
 
-import js.Syntax;
-import pui.ui.Component;
-import pui.ext.TextStyleMeasure;
-import pixi.core.display.Container;
-import pixi.core.display.DisplayObject;
-import pixi.core.text.Text;
-import pixi.core.text.TextMetrics;
-import pixi.extras.BitmapText;
 import haxe.extern.EitherType;
+import js.Syntax;
+import pixi.display.BitmapText;
+import pixi.display.Container;
+import pixi.display.Text;
+import pixi.text.TextMetrics;
+import pui.ext.TextStyleMeasure;
+import pui.ui.Component;
 
 /**
  * Текстовая метка.
@@ -323,7 +322,7 @@ class Label extends Component
 	/**
      * Выгрузить текстовую метку.
 	 */
-    override function destroy(?options:EitherType<Bool, DestroyOptions>) {
+    override function destroy(?options:EitherType<Bool, ContainerDestroyOptions>) {
         Utils.destroySkin(texture, options);
         Utils.destroySkin(skinText, options);
         Utils.destroySkin(skinBitmapText, options);

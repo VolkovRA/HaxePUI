@@ -1,7 +1,7 @@
 package pui.events;
 
+import pixi.events.EventEmitter;
 import pui.BitMask;
-import pixi.interaction.EventEmitter;
 
 /**
  * Событие компонента библиотеки PUI.

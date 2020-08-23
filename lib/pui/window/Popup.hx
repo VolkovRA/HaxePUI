@@ -1,13 +1,11 @@
 package pui.window;
 
 import js.lib.Error;
-import pui.ui.Button;
-import pui.ui.Label;
-import pui.ui.Component;
+import pixi.display.Container;
+import pixi.display.DisplayObject;
 import pui.events.Event;
 import pui.events.PopupEvent;
-import pixi.core.display.DisplayObject;
-import pixi.core.display.Container;
+import pui.ui.Component;
 
 /**
  * Менеджер всплывающих окон.

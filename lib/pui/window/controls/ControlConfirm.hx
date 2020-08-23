@@ -1,10 +1,10 @@
 package pui.window.controls;
 
 import haxe.extern.EitherType;
+import pixi.display.Container;
 import pui.ui.Button;
 import pui.ui.Component;
 import pui.events.Event;
-import pixi.core.display.DisplayObject;
 
 /**
  * Панелька с кнопками "ОК" и "Отмена" для запроса подтверждения пользователя.
@@ -141,7 +141,7 @@ class ControlConfirm extends Component
     /**
      * Выгрузить панельку.
      */
-    override function destroy(?options:EitherType<Bool, DestroyOptions>) {
+    override function destroy(?options:EitherType<Bool, ContainerDestroyOptions>) {
         Utils.destroySkin(buttonOK, options);
         Utils.destroySkin(buttonCancel, options);
         super.destroy(options);

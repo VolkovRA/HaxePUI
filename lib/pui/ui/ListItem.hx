@@ -1,8 +1,8 @@
 package pui.ui;
 
-import pui.events.Event;
 import haxe.extern.EitherType;
-import pixi.core.display.DisplayObject;
+import pixi.display.Container;
+import pui.events.Event;
 
 /**
  * Элемент списка.
@@ -74,7 +74,7 @@ class ListItem extends Component
      * @see https://pixijs.download/dev/docs/PIXI.Container.html#destroy
      */
     @:keep
-    override function destroy(?options:EitherType<Bool, DestroyOptions>) {
+    override function destroy(?options:EitherType<Bool, ContainerDestroyOptions>) {
         Utils.delete(data);
         super.destroy(options);
     }

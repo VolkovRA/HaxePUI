@@ -1,12 +1,12 @@
 package pui.ui;
 
+import haxe.extern.EitherType;
 import js.Syntax;
 import js.lib.Error;
+import pixi.display.Container;
+import pixi.geom.Rectangle;
 import pui.events.Event;
 import pui.ui.Component;
-import pixi.core.display.DisplayObject;
-import pixi.core.math.shapes.Rectangle;
-import haxe.extern.EitherType;
 
 /**
  * Листинг элементов.
@@ -424,7 +424,7 @@ class List extends Scroller
      * @see https://pixijs.download/dev/docs/PIXI.Container.html#destroy
      */
     @:keep
-    override function destroy(?options:EitherType<Bool, DestroyOptions>) {
+    override function destroy(?options:EitherType<Bool, ContainerDestroyOptions>) {
         // Views pool:
         var len = viewsPool.length;
         while (len-- != 0) {

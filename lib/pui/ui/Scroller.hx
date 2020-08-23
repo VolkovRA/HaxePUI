@@ -1,18 +1,16 @@
 package pui.ui;
 
+import haxe.extern.EitherType;
+import pixi.display.Container;
+import pixi.display.Graphics;
+import pixi.events.InteractionEvent;
+import pixi.geom.Point;
+import pixi.geom.Rectangle;
+import pixi.render.MaskData;
 import pui.events.Event;
 import pui.events.WheelEvent;
 import pui.geom.Vec2;
 import pui.ui.Component;
-import pui.pixi.PixiEvent;
-import pixi.core.display.Container;
-import pixi.core.display.DisplayObject;
-import pixi.core.graphics.Graphics;
-import pixi.core.sprites.Sprite;
-import pixi.core.math.Point;
-import pixi.core.math.shapes.Rectangle;
-import pixi.interaction.InteractionEvent;
-import haxe.extern.EitherType;
 
 /**
  * Скроллер контента.
@@ -81,9 +79,9 @@ class Scroller extends Component
         Utils.set(this.updateSize, Scroller.defaultSize);
 
         on(WheelEvent.WHEEL, onWheel);
-        on(PixiEvent.POINTER_DOWN, onContentDown);
-        on(PixiEvent.POINTER_UP, onContentUp);
-        on(PixiEvent.POINTER_UP_OUTSIDE, onContentUp);
+        on(InteractionEvent.POINTER_DOWN, onContentDown);
+        on(InteractionEvent.POINTER_UP, onContentUp);
+        on(InteractionEvent.POINTER_UP_OUTSIDE, onContentUp);
     }
 
 
@@ -127,7 +125,7 @@ class Scroller extends Component
         e.stopPropagation();
 
         // Перетаскивание контента:
-        on(PixiEvent.POINTER_MOVE, onContentMove);
+        on(InteractionEvent.POINTER_MOVE, onContentMove);
 
         // Сохраняем точку захвата:
         POINT.x = e.data.global.x;
@@ -161,7 +159,7 @@ class Scroller extends Component
         // Перетаскивание контента мышкой.
         // Проверка актуальности события:
         if (!isActualInput(e) || drag == null || (!drag.allowX && !drag.allowY) || !isDragged) {
-            off(PixiEvent.POINTER_MOVE, onContentMove);
+            off(InteractionEvent.POINTER_MOVE, onContentMove);
             if (isDragged) { // <-- Слушатель более не актуален
                 isDragged = false;
                 Event.fire(Event.STOP_DRAG, this);
@@ -252,7 +250,7 @@ class Scroller extends Component
         e.stopPropagation();
         
         // Перетаскивание контента:
-        off(PixiEvent.POINTER_MOVE, onContentMove);
+        off(InteractionEvent.POINTER_MOVE, onContentMove);
 
         // Перетаскивание контента:
         POINT.x = e.data.global.x;
@@ -416,8 +414,8 @@ class Scroller extends Component
      * 
      * По умолчанию используется экземпляр `Graphics` 10x10. (Коробка)
      */
-    public var contentMask(default, set):EitherType<Sprite, Graphics> = null;
-    function set_contentMask(value:EitherType<Sprite, Graphics>):EitherType<Sprite, Graphics> {
+    public var contentMask(default, set):EitherType<Container,MaskData> = null;
+    function set_contentMask(value:EitherType<Container,MaskData>):EitherType<Container,MaskData> {
         if (Utils.eq(value, contentMask))
             return value;
 
@@ -651,7 +649,7 @@ class Scroller extends Component
     /**
      * Выгрузить скроллер.
 	 */
-    override function destroy(?options:EitherType<Bool, DestroyOptions>) {
+    override function destroy(?options:EitherType<Bool, ContainerDestroyOptions>) {
         scrollV.destroy(options);
         Utils.delete(scrollV);
         

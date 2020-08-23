@@ -1,12 +1,10 @@
 package pui.ui;
 
+import haxe.extern.EitherType;
+import pixi.display.Container;
+import pixi.events.InteractionEvent;
 import pui.events.Event;
 import pui.ui.Component;
-import pui.pixi.PixiEvent;
-import pixi.core.display.Container;
-import pixi.core.display.DisplayObject;
-import pixi.interaction.InteractionEvent;
-import haxe.extern.EitherType;
 
 /**
  * Флажок.
@@ -45,10 +43,10 @@ class CheckBox extends Component
         Utils.set(this.updateLayers, CheckBox.defaultLayers);
         Utils.set(this.updateSize, CheckBox.defaultSize);
 
-        on(PixiEvent.POINTER_OVER, onRollOver);
-        on(PixiEvent.POINTER_OUT, onRollOut);
-        on(PixiEvent.POINTER_DOWN, onDown);
-        on(PixiEvent.POINTER_UP, onUp);
+        on(InteractionEvent.POINTER_OVER, onRollOver);
+        on(InteractionEvent.POINTER_OUT, onRollOut);
+        on(InteractionEvent.POINTER_DOWN, onDown);
+        on(InteractionEvent.POINTER_UP, onUp);
     }
 
 
@@ -696,7 +694,7 @@ class CheckBox extends Component
     /**
      * Выгрузить флажок.
      */
-    override function destroy(?options:EitherType<Bool, DestroyOptions>) {
+    override function destroy(?options:EitherType<Bool, ContainerDestroyOptions>) {
         Utils.destroySkin(skinBgChecked, options);
         Utils.destroySkin(skinBgCheckedDisable, options);
         Utils.destroySkin(skinBgCheckedHover, options);

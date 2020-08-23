@@ -1,13 +1,11 @@
 package pui.ui;
 
+import haxe.extern.EitherType;
+import pixi.events.InteractionEvent;
+import pixi.display.Container;
+import pixi.geom.Point;
 import pui.events.Event;
 import pui.ui.Component;
-import pui.pixi.PixiEvent;
-import pixi.core.display.Container;
-import pixi.core.display.DisplayObject;
-import pixi.core.math.Point;
-import pixi.interaction.InteractionEvent;
-import haxe.extern.EitherType;
 
 /**
  * Полоса прокрутки.
@@ -48,9 +46,9 @@ class ScrollBar extends Component
         Utils.set(this.updateLayers, ScrollBar.defaultLayers);
         Utils.set(this.updateSize, ScrollBar.defaultSize);
 
-        on(PixiEvent.POINTER_DOWN, onDown);
-        on(PixiEvent.POINTER_UP, onUp);
-        on(PixiEvent.POINTER_UP_OUTSIDE, onUp);
+        on(InteractionEvent.POINTER_DOWN, onDown);
+        on(InteractionEvent.POINTER_UP, onUp);
+        on(InteractionEvent.POINTER_UP_OUTSIDE, onUp);
     }
 
 
@@ -65,7 +63,7 @@ class ScrollBar extends Component
         
         e.stopPropagation();
 
-        thumb.on(PixiEvent.POINTER_MOVE, onThumbMove);
+        thumb.on(InteractionEvent.POINTER_MOVE, onThumbMove);
 
         POINT.x = e.data.global.x;
         POINT.y = e.data.global.y;
@@ -84,7 +82,7 @@ class ScrollBar extends Component
         // Перетаскивание контента мышкой.
         // Проверка актуальности события:
         if (!isActualInput(e) || !isDragged) {
-            thumb.off(PixiEvent.POINTER_MOVE, onThumbMove);
+            thumb.off(InteractionEvent.POINTER_MOVE, onThumbMove);
             if (isDragged) { // <-- Слушатель более не актуален
                 isDragged = false;
                 Event.fire(Event.STOP_DRAG, this);
@@ -208,7 +206,7 @@ class ScrollBar extends Component
         e.stopPropagation();
 
         // Перетаскивание ползунка:
-        thumb.off(PixiEvent.POINTER_MOVE, onThumbMove);
+        thumb.off(InteractionEvent.POINTER_MOVE, onThumbMove);
 
         // Событие:
         if (isDragged) {
@@ -240,7 +238,7 @@ class ScrollBar extends Component
         
         e.stopPropagation();
 
-        on(PixiEvent.POINTER_MOVE, onMove);
+        on(InteractionEvent.POINTER_MOVE, onMove);
         onMove(e);
     }
 
@@ -248,12 +246,12 @@ class ScrollBar extends Component
         if (!isActualInput(e))
             return;
 
-        off(PixiEvent.POINTER_MOVE, onMove);
+        off(InteractionEvent.POINTER_MOVE, onMove);
     }
 
     private function onMove(e:InteractionEvent):Void {
         if (!isActualInput(e)) {
-            off(PixiEvent.POINTER_MOVE, onMove);
+            off(InteractionEvent.POINTER_MOVE, onMove);
             return;
         }
 
@@ -302,7 +300,7 @@ class ScrollBar extends Component
             
             // Активность только в рамах скроллбара:
             if (POINT.x < 0 || POINT.x > w || POINT.y < 0 || POINT.y > h)
-                off(PixiEvent.POINTER_MOVE, onMove);
+                off(InteractionEvent.POINTER_MOVE, onMove);
         }
         else {
             var fy:Float = 0;
@@ -345,7 +343,7 @@ class ScrollBar extends Component
             
             // Активность только в рамах скроллбара:
             if (POINT.x < 0 || POINT.x > w || POINT.y < 0 || POINT.y > h)
-                off(PixiEvent.POINTER_MOVE, onMove);
+                off(InteractionEvent.POINTER_MOVE, onMove);
         }
     }
 
@@ -554,18 +552,18 @@ class ScrollBar extends Component
         if (Utils.noeq(thumb, null)) {
             Utils.hide(this, thumb);
 
-            thumb.off(PixiEvent.POINTER_DOWN, onThumbDown);
-            thumb.off(PixiEvent.POINTER_MOVE, onThumbMove);
-            thumb.off(PixiEvent.POINTER_UP, onThumbUp);
-            thumb.off(PixiEvent.POINTER_UP_OUTSIDE, onThumbUp);
+            thumb.off(InteractionEvent.POINTER_DOWN, onThumbDown);
+            thumb.off(InteractionEvent.POINTER_MOVE, onThumbMove);
+            thumb.off(InteractionEvent.POINTER_UP, onThumbUp);
+            thumb.off(InteractionEvent.POINTER_UP_OUTSIDE, onThumbUp);
         }
 
         thumb = value;
 
         if (Utils.noeq(thumb, null)) {
-            thumb.on(PixiEvent.POINTER_DOWN, onThumbDown);
-            thumb.on(PixiEvent.POINTER_UP, onThumbUp);
-            thumb.on(PixiEvent.POINTER_UP_OUTSIDE, onThumbUp);
+            thumb.on(InteractionEvent.POINTER_DOWN, onThumbDown);
+            thumb.on(InteractionEvent.POINTER_UP, onThumbUp);
+            thumb.on(InteractionEvent.POINTER_UP_OUTSIDE, onThumbUp);
         }
 
         if (isDragged) {
@@ -734,7 +732,7 @@ class ScrollBar extends Component
     /**
      * Выгрузить скроллбар.
 	 */
-    override function destroy(?options:EitherType<Bool, DestroyOptions>) {
+    override function destroy(?options:EitherType<Bool, ContainerDestroyOptions>) {
         Utils.destroySkin(incBt, options);
         Utils.destroySkin(decBt, options);
         Utils.destroySkin(thumb, options);

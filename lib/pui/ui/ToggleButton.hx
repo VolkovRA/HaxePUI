@@ -1,12 +1,10 @@
 package pui.ui;
 
-import pui.events.Event;
-import pui.pixi.PixiEvent;
-import pui.ui.Component;
-import pixi.core.display.Container;
-import pixi.core.display.DisplayObject;
-import pixi.interaction.InteractionEvent;
 import haxe.extern.EitherType;
+import pixi.display.Container;
+import pixi.events.InteractionEvent;
+import pui.events.Event;
+import pui.ui.Component;
 
 /**
  * Зажимная кнопка.
@@ -47,11 +45,11 @@ class ToggleButton extends Component
         Utils.set(this.updateLayers, ToggleButton.icoDown);
         Utils.set(this.updateSize, ToggleButton.pos8);
 
-        on(PixiEvent.POINTER_OVER, onRollOver);
-        on(PixiEvent.POINTER_OUT, onRollOut);
-        on(PixiEvent.POINTER_DOWN, onDown);
-        on(PixiEvent.POINTER_UP, onUp);
-        on(PixiEvent.POINTER_UP_OUTSIDE, onUpOutside);
+        on(InteractionEvent.POINTER_OVER, onRollOver);
+        on(InteractionEvent.POINTER_OUT, onRollOut);
+        on(InteractionEvent.POINTER_DOWN, onDown);
+        on(InteractionEvent.POINTER_UP, onUp);
+        on(InteractionEvent.POINTER_UP_OUTSIDE, onUpOutside);
     }
 
 
@@ -865,7 +863,7 @@ class ToggleButton extends Component
     /**
      * Выгрузить кнопку.
 	 */
-    override function destroy(?options:EitherType<Bool, DestroyOptions>) {
+    override function destroy(?options:EitherType<Bool, ContainerDestroyOptions>) {
         Utils.destroySkin(label, options);
         Utils.destroySkin(labelHover, options);
         Utils.destroySkin(labelPress, options);

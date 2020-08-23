@@ -2,10 +2,10 @@ package;
 
 import pui.*;
 import pui.ui.*;
-import pixi.core.Application;
-import pixi.core.graphics.Graphics;
-import pixi.core.text.Text;
-import pixi.core.text.TextStyle;
+import pixi.Application;
+import pixi.display.Graphics;
+import pixi.display.Text;
+import pixi.text.TextStyle;
 
 /**
  * Пример пользовательской темы оформления.

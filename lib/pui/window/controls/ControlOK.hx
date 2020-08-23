@@ -1,10 +1,10 @@
 package pui.window.controls;
 
 import haxe.extern.EitherType;
+import pixi.display.Container;
 import pui.ui.Button;
 import pui.ui.Component;
 import pui.events.Event;
-import pixi.core.display.DisplayObject;
 
 /**
  * Панелька с кнопкой ОК.
@@ -95,7 +95,7 @@ class ControlOK extends Component
     /**
      * Выгрузить панельку.
      */
-    override function destroy(?options:EitherType<Bool, DestroyOptions>) {
+    override function destroy(?options:EitherType<Bool, ContainerDestroyOptions>) {
         Utils.destroySkin(buttonOK, options);
         super.destroy(options);
     }

@@ -1,13 +1,13 @@
 package;
 
-import pixi.core.display.Container;
+import js.Browser;
 import pui.*;
 import pui.ui.*;
 import pui.geom.*;
 import pui.events.*;
-import pixi.core.Application;
-import pixi.core.graphics.Graphics;
-import js.Browser;
+import pixi.Application;
+import pixi.display.Container;
+import pixi.display.Graphics;
 
 /**
  * Пример использования.
